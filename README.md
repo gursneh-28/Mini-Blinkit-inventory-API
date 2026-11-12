@@ -1,62 +1,81 @@
 # Mini Blinkit Inventory API
 
-A small inventory-management application inspired by Blinkit. Users can add products, view available stock, reserve items, confirm reservations and release reservations. Reservations expire automatically after 10 minutes.
+A small inventory-management application inspired by Blinkit. Users can add products, view available stock, reserve items, confirm reservations, and release reservations. Reservations expire automatically after 10 minutes.
 
-The goal of this project is to demonstrate **Docker, GitHub collaboration, CI/CD and deployment**. The application itself is intentionally kept simple.
+The goal of this project is to demonstrate **Docker, GitHub collaboration, CI/CD, and deployment**. The application itself is intentionally kept simple.
 
-- **GitHub repository:** _to be added_
-- **Live application (Vercel):** _to be added_
+- **GitHub repository:** https://github.com/gursneh-28/Mini-Blinkit-inventory-API.git
+- **Live application (Vercel):** _To be added_
 
 ---
 
 ## Quick start (about 5 minutes)
 
-Follow these steps to run the backend on your own computer.
+Follow these steps to run the backend on your computer.
 
 ### 1. Install the tools
 
-- [Node.js](https://nodejs.org) **22 or newer** (check with `node --version`)
+- [Node.js](https://nodejs.org), version **22 or newer** (`node --version`)
 - [Git](https://git-scm.com)
-- Docker Desktop (only needed for Step 4 onwards)
+- Docker Desktop (needed from Step 4 onwards)
 
-### 2. Clone the repository and install
+### 2. Clone the repository and install dependencies
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone https://github.com/gursneh-28/Mini-Blinkit-inventory-API.git
 cd Mini-Blinkit-inventory-API/server
 npm install
 ```
 
 ### 3. Create your environment file
 
+From the `server/` directory, run:
+
 ```bash
 cp .env.example .env
 ```
 
-On Windows Command Prompt use `copy .env.example .env` instead. PowerShell accepts either.
+On Windows Command Prompt, use:
 
-### 4. Add the database connection
+```cmd
+copy .env.example .env
+```
 
-The whole team uses **one shared Neon database**, and the tables already exist.
+PowerShell also accepts `cp`.
 
-1. Ask Member 1 for the connection strings **privately** (direct message). Never post them in GitHub issues, pull requests, commits or the README.
-2. Open `server/.env` and paste them in as `DATABASE_URL` (direct) and `DATABASE_URL_POOLED` (pooled; the host contains `-pooler`). If you only received one string, put it in `DATABASE_URL` and leave `DATABASE_URL_POOLED` empty. The app uses the pooled one when it is set.
-3. Keep the other lines (`PORT`, `RESERVATION_TTL_MINUTES`) as they are.
+### 4. Configure the database connection
 
-> Everyone shares the same data, so products you add are visible to the whole team. Please do not drop, truncate or delete tables.
+The team uses a shared **Neon PostgreSQL database** for the application.
 
-### 5. Check the database connection
+1. Ask Member 1 for the database connection strings privately.
+2. Open `server/.env`.
+3. Add the connection strings:
+   - `DATABASE_URL`: Direct Neon connection string.
+   - `DATABASE_URL_POOLED`: Pooled Neon connection string. Its hostname contains `-pooler`.
+4. If you have only one connection string, put it in `DATABASE_URL` and leave `DATABASE_URL_POOLED` empty.
+
+Keep the other environment variables, such as `PORT` and `RESERVATION_TTL_MINUTES`, unchanged.
+
+**Important:** Everyone using the shared database can see the same product and reservation data. Do not drop, truncate, or delete shared database tables.
+
+Never share database credentials in GitHub issues, pull requests, commits, or this README.
+
+### 5. Initialize the database
+
+Run this from the `server/` directory:
 
 ```bash
 npm run db:init
 ```
 
-This creates the tables if they are missing and does nothing if they already exist, so it is safe to run. You should see:
+This creates the required tables if they do not already exist.
 
-```
+Expected output:
+
+```text
 Database schema is ready. Tables:
- - products
- - reservations
+- products
+- reservations
 ```
 
 ### 6. Start the API
@@ -65,31 +84,51 @@ Database schema is ready. Tables:
 npm run dev
 ```
 
-Open <http://localhost:3000/api/health>. You should see:
+Open:
+
+[http://localhost:3000/api/health](http://localhost:3000/api/health)
+
+Expected response:
 
 ```json
-{ "status": "OK", "message": "Mini Blinkit API is running" }
+{
+  "status": "OK",
+  "message": "Mini Blinkit API is running"
+}
 ```
 
-### 7. Try it
+### 7. Try the API
 
-PowerShell:
+**Windows PowerShell**
+
+Add a product:
 
 ```powershell
-# Add a product
-Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/products -ContentType "application/json" -Body '{"name":"Amul Milk 500ml","category":"Dairy","price":29,"stock_qty":100}'
-
-# List products
-Invoke-RestMethod http://localhost:3000/api/products
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:3000/api/products" `
+  -ContentType "application/json" `
+  -Body '{"name":"Amul Milk 500ml","category":"Dairy","price":29,"stock_qty":100}'
 ```
 
-macOS / Linux / Git Bash:
+List products:
+
+```powershell
+Invoke-RestMethod "http://localhost:3000/api/products"
+```
+
+**macOS / Linux / Git Bash**
+
+Add a product:
 
 ```bash
 curl -X POST http://localhost:3000/api/products \
   -H "Content-Type: application/json" \
   -d '{"name":"Amul Milk 500ml","category":"Dairy","price":29,"stock_qty":100}'
+```
 
+List products:
+
+```bash
 curl http://localhost:3000/api/products
 ```
 
@@ -97,12 +136,12 @@ curl http://localhost:3000/api/products
 
 | Problem | Fix |
 |---|---|
-| `getaddrinfo ENOTFOUND ...neon.tech` or `DNS operation refused` | Your network's DNS cannot resolve Neon. Switch your DNS to `8.8.8.8` and `1.1.1.1` (or use your phone's hotspot), run `ipconfig /flushdns`, and try again. |
-| `password authentication failed` | The connection string is wrong or outdated. Copy a fresh one from the Neon dashboard. |
-| `relation "products" does not exist` | Run `npm run db:init`. |
-| Environment variable is `undefined` | Run commands from the `server/` folder and check that `server/.env` exists. |
-| `EADDRINUSE` (port already in use) | Change `PORT` in `.env`, or stop the other program using port 3000. |
-| A long SSL warning about `sslmode` | Harmless. It is a notice about a future version of the `pg` library. |
+| `getaddrinfo ENOTFOUND ...neon.tech` or DNS errors | Your network may not be resolving Neon. Try another network or your phone's hotspot. You can also try DNS servers `8.8.8.8` and `1.1.1.1`, then run `ipconfig /flushdns`. |
+| `password authentication failed` | Check that the connection string is correct and up to date. |
+| `relation "products" does not exist` | Run `npm run db:init` from `server/`. |
+| Environment variable is `undefined` | Run commands from the `server/` directory and check that `server/.env` exists. |
+| `EADDRINUSE` | Port 3000 is already in use. Stop the other process or change `PORT` in `.env`. |
+| PostgreSQL SSL warning about `sslmode` | This may be an informational warning from the `pg` library. It does not necessarily mean the connection failed. |
 
 ---
 
@@ -110,29 +149,31 @@ curl http://localhost:3000/api/products
 
 | Area | Technology |
 |---|---|
-| Frontend | React + Vite |
+| Frontend | React + Vite (planned) |
 | Backend | Node.js 22 + Express |
 | Database | PostgreSQL (Neon) |
-| Testing | Jest + Supertest (backend) |
-| Containerization | Docker |
-| CI/CD | GitHub Actions |
-| Deployment | Vercel |
+| Testing | Node.js built-in test runner + Supertest |
+| Containerization | Docker (planned) |
+| CI/CD | GitHub Actions (planned) |
+| Deployment | Vercel (planned) |
 | Version control | Git + GitHub |
 
-> **Deployment note:** Docker is used to run and test the application container locally and to build the image in CI. Vercel does not deploy a Docker image directly, so the frontend and API use a Vercel-compatible setup (static frontend build plus the Express app running as a serverless function under `/api`).
->
-> **Why a real database and not in-memory data:** Vercel runs functions in separate, short-lived instances, so in-memory data is not shared between requests. Inventory is stored in PostgreSQL so every request sees the same stock.
+**Deployment note:** Docker will be used to run and test the application locally and to build the image in CI. Vercel does not deploy a Docker image directly, so the frontend and API will use a Vercel-compatible setup: a static frontend build and the Express application running as a serverless function under `/api`.
+
+**Why PostgreSQL instead of in-memory data?** Vercel functions can run in separate, short-lived instances. In-memory data is not shared between requests. PostgreSQL ensures that every request works with the same inventory and reservation data.
 
 ---
 
 ## Main features
 
-- Add products with a name, category, price and stock quantity.
+- Add products with a name, category, price, and stock quantity.
 - View products and their available quantities.
+- Filter products by category.
 - Reserve stock only when enough unreserved stock is available.
 - Confirm a reservation to complete the stock deduction.
-- Release a reservation to make the reserved quantity available again.
+- Release a reservation to make reserved stock available again.
 - Automatically expire reservations after 10 minutes.
+- Prevent overselling through atomic database updates and transactions.
 
 ---
 
@@ -140,21 +181,21 @@ curl http://localhost:3000/api/products
 
 Available stock is calculated as:
 
-```
+```text
 available_qty = stock_qty - reserved_qty
 ```
 
 | Operation | What happens |
 |---|---|
-| **Add product** | Create the product with `stock_qty` and `reserved_qty = 0`. |
-| **Reserve** | Increase `reserved_qty` only if enough stock is available. Creates a reservation with status `HELD` and `expires_at = now + 10 minutes`. |
-| **Confirm** | Decrease both `stock_qty` and `reserved_qty`. Reservation becomes `CONFIRMED`. |
-| **Release** | Decrease `reserved_qty` only (`stock_qty` is unchanged). Reservation becomes `RELEASED`. |
-| **Expire** | Reservations still `HELD` after `expires_at` are released automatically. Reservation becomes `EXPIRED`. |
+| **Add product** | Creates a product with `stock_qty` and `reserved_qty = 0`. |
+| **Reserve** | Increases `reserved_qty` only if enough stock is available. Creates a reservation with status `HELD` and an expiry time. |
+| **Confirm** | Decreases both `stock_qty` and `reserved_qty`. Reservation becomes `CONFIRMED`. |
+| **Release** | Decreases `reserved_qty` only. `stock_qty` remains unchanged. Reservation becomes `RELEASED`. |
+| **Expire** | A reservation that is still `HELD` after its expiry time is released automatically. Reservation becomes `EXPIRED`. |
 
 ### Atomic reservation
 
-The stock check and the update happen in a **single SQL statement**, so two requests can never reserve the same stock:
+The stock check and stock update happen in a **single SQL statement**. This prevents two concurrent requests from reserving the same available stock.
 
 ```sql
 UPDATE products
@@ -165,17 +206,46 @@ WHERE id = $1
 RETURNING id;
 ```
 
-If no row is updated, there was not enough stock and the API returns `409 INSUFFICIENT_STOCK`. The product update and the reservation insert run in the same database transaction.
+If no row is updated, there is insufficient stock and the API returns:
 
-### How expiry works (important on Vercel)
+```text
+409 INSUFFICIENT_STOCK
+```
 
-Vercel functions are stateless, so background timers such as `setInterval()` are **not** used. Instead, an `expireReservations()` function runs **before every product read and every reservation request** (reserve, confirm, release). It finds reservations that are still `HELD` and past `expires_at`, marks them `EXPIRED` and decrements `reserved_qty` in one transaction. Only `HELD` reservations are ever expired, so a confirmed reservation is never released.
+The product update and reservation insertion run inside the same database transaction.
+
+### How reservation expiry works
+
+Vercel functions are stateless, so background timers such as `setInterval()` are not used.
+
+Instead, the `expireReservations()` function runs before:
+
+- Product reads.
+- New reservation requests.
+- Reservation confirmation.
+- Reservation release.
+
+It finds reservations that are still `HELD` and whose `expires_at` time has passed. It then:
+
+1. Marks those reservations as `EXPIRED`.
+2. Decreases the corresponding products' `reserved_qty`.
+3. Performs the changes within a database transaction.
+
+Only `HELD` reservations can expire. Confirmed reservations are never released by the expiry process.
+
+The expiry duration is configurable using `RESERVATION_TTL_MINUTES`, which defaults to 10 minutes.
 
 ---
 
 ## Database schema
 
-Defined in `server/db/schema.sql` and created with `npm run db:init` (safe to run more than once).
+The schema is defined in `server/db/schema.sql` and initialized using:
+
+```bash
+npm run db:init
+```
+
+The command is safe to run more than once for the existing schema because it uses `CREATE TABLE IF NOT EXISTS`.
 
 ```sql
 CREATE TABLE IF NOT EXISTS products (
@@ -192,8 +262,11 @@ CREATE TABLE IF NOT EXISTS products (
         CHECK (reserved_qty >= 0 AND reserved_qty <= stock_qty)
 );
 
-CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
-CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
+CREATE INDEX IF NOT EXISTS idx_products_category
+    ON products(category);
+
+CREATE INDEX IF NOT EXISTS idx_products_name
+    ON products(name);
 
 CREATE TABLE IF NOT EXISTS reservations (
     id SERIAL PRIMARY KEY,
@@ -209,9 +282,16 @@ CREATE INDEX IF NOT EXISTS idx_reservations_status_expiry
     ON reservations(status, expires_at);
 ```
 
-The `CHECK` constraints are a second safety net: the database itself refuses negative stock or `reserved_qty > stock_qty`. `updated_at` is not automatic, so every query that changes a product sets `updated_at = NOW()`.
+The database constraints provide an additional safety layer:
 
-> `CREATE TABLE IF NOT EXISTS` never changes a table that already exists. If you edit a column in `schema.sql`, tell the team and drop and recreate the tables (or add an `ALTER TABLE`).
+- Product price cannot be negative.
+- Stock quantity cannot be negative.
+- Reserved quantity cannot be negative.
+- Reserved quantity cannot exceed total stock.
+- Reservation quantity must be greater than zero.
+- Reservation status must be one of the permitted values.
+
+**Schema note:** `CREATE TABLE IF NOT EXISTS` does not modify an existing table. If the schema changes, coordinate with the team and use an appropriate migration or `ALTER TABLE` statement.
 
 ---
 
@@ -220,99 +300,189 @@ The `CHECK` constraints are a second safety net: the database itself refuses neg
 | Method | Endpoint | Purpose | Status |
 |---|---|---|---|
 | GET | `/api/health` | Check whether the API is running | Done |
-| GET | `/api/products` | List products and available stock (optional `?category=`) | Done |
+| GET | `/api/products` | List products and available stock | Done |
 | POST | `/api/products` | Add a product | Done |
-| POST | `/api/reservations` | Reserve product stock | Step 3 |
-| POST | `/api/reservations/:id/confirm` | Confirm a reservation | Step 3 |
-| POST | `/api/reservations/:id/release` | Release a reservation | Step 3 |
+| POST | `/api/reservations` | Reserve product stock | Done |
+| POST | `/api/reservations/:id/confirm` | Confirm a reservation | Done |
+| POST | `/api/reservations/:id/release` | Release a reservation | Done |
+
+The products endpoint supports an optional category filter:
+
+```text
+GET /api/products?category=Dairy
+```
 
 ### Request and response examples
 
 **`GET /api/health`**
 
 ```json
-200 { "status": "OK", "message": "Mini Blinkit API is running" }
+{
+  "status": "OK",
+  "message": "Mini Blinkit API is running"
+}
 ```
 
 **`POST /api/products`**
 
-```json
-Request  { "name": "Amul Milk 500ml", "category": "Dairy", "price": 29, "stock_qty": 100 }
-201      { "id": 1, "name": "Amul Milk 500ml", "category": "Dairy", "price": 29,
-           "stock_qty": 100, "reserved_qty": 0, "available_qty": 100,
-           "created_at": "2026-11-12T07:31:40.323Z" }
-400      VALIDATION_ERROR
-```
-
-Validation rules: `name` and `category` are required text (max 150 and 100 characters), `price` is a number from 0 to 99999999.99, and `stock_qty` is a whole number from 0 to 1000000.
-
-**`GET /api/products`** (optional filter: `/api/products?category=Dairy`)
+Request:
 
 ```json
-200 [ { "id": 1, "name": "Amul Milk 500ml", "category": "Dairy", "price": 29,
-        "stock_qty": 100, "reserved_qty": 5, "available_qty": 95,
-        "created_at": "2026-11-12T07:31:40.323Z" } ]
+{
+  "name": "Amul Milk 500ml",
+  "category": "Dairy",
+  "price": 29,
+  "stock_qty": 100
+}
 ```
 
-**`POST /api/reservations`** (Step 3)
+Successful response: `201 Created`
 
 ```json
-Request  { "product_id": 1, "quantity": 5 }
-201      { "id": 12, "product_id": 1, "quantity": 5, "status": "HELD",
-           "expires_at": "2026-11-12T10:30:00Z" }
-400      VALIDATION_ERROR
-404      PRODUCT_NOT_FOUND
-409      INSUFFICIENT_STOCK
+{
+  "id": 1,
+  "name": "Amul Milk 500ml",
+  "category": "Dairy",
+  "price": 29,
+  "stock_qty": 100,
+  "reserved_qty": 0,
+  "available_qty": 100,
+  "created_at": "2026-11-12T07:31:40.323Z"
+}
 ```
 
-**`POST /api/reservations/:id/confirm`** and **`POST /api/reservations/:id/release`** (Step 3)
+Validation error: `400 VALIDATION_ERROR`
+
+Product validation rules:
+
+- `name` and `category` are required text fields.
+- Maximum name length: 150 characters.
+- Maximum category length: 100 characters.
+- `price` must be a number from 0 to 99,999,999.99.
+- `stock_qty` must be a whole number from 0 to 1,000,000.
+
+**`GET /api/products`**
+
+Example response:
 
 ```json
-200      { "id": 12, "status": "CONFIRMED" }     (or "RELEASED")
-404      RESERVATION_NOT_FOUND
-409      RESERVATION_NOT_ACTIVE   (already confirmed, released or expired)
+[
+  {
+    "id": 1,
+    "name": "Amul Milk 500ml",
+    "category": "Dairy",
+    "price": 29,
+    "stock_qty": 100,
+    "reserved_qty": 5,
+    "available_qty": 95,
+    "created_at": "2026-11-12T07:31:40.323Z"
+  }
+]
 ```
 
-### Error format
+**`POST /api/reservations`**
 
-All errors use the same shape:
+Request:
 
 ```json
-{ "error": { "code": "INSUFFICIENT_STOCK", "message": "Only 3 units available" } }
+{
+  "product_id": 1,
+  "quantity": 5
+}
 ```
+
+Successful response: `201 Created`
+
+The response contains the reservation ID, product ID, quantity, `HELD` status, and expiry timestamp.
+
+Possible errors:
+
+| HTTP status | Error code | Meaning |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Invalid input |
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 409 | `INSUFFICIENT_STOCK` | Not enough available stock |
+
+**`POST /api/reservations/:id/confirm`**
+
+Confirms a reservation and deducts the reserved quantity from stock.
+
+Successful response: `200 OK`, with reservation status `CONFIRMED`.
+
+**`POST /api/reservations/:id/release`**
+
+Releases a reservation and makes the reserved quantity available again.
+
+Successful response: `200 OK`, with reservation status `RELEASED`.
+
+For confirmation and release, possible errors include:
+
+| HTTP status | Error code | Meaning |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Invalid reservation ID |
+| 404 | `RESERVATION_NOT_FOUND` | Reservation does not exist |
+| 409 | `INVALID_RESERVATION_STATUS` | Reservation is no longer `HELD` |
+
+### Error response format
+
+All API errors use a consistent response structure:
+
+```json
+{
+  "error": {
+    "code": "INSUFFICIENT_STOCK",
+    "message": "Only 3 units available"
+  }
+}
+```
+
+Other error codes:
 
 | Code | HTTP status | Meaning |
 |---|---|---|
 | `VALIDATION_ERROR` | 400 | Missing or invalid input, or invalid JSON |
 | `NOT_FOUND` | 404 | Unknown route |
-| `PRODUCT_NOT_FOUND` / `RESERVATION_NOT_FOUND` | 404 | Unknown id |
-| `INSUFFICIENT_STOCK` / `RESERVATION_NOT_ACTIVE` | 409 | Not enough stock, or the reservation is no longer `HELD` |
+| `PRODUCT_NOT_FOUND` | 404 | Product ID does not exist |
+| `RESERVATION_NOT_FOUND` | 404 | Reservation ID does not exist |
+| `INSUFFICIENT_STOCK` | 409 | Not enough stock available |
+| `INVALID_RESERVATION_STATUS` | 409 | Reservation is no longer active |
 | `INTERNAL_ERROR` | 500 | Unexpected server error |
 
 ---
 
 ## Project structure
 
-Items marked "(planned)" are created in later steps.
+The structure below includes implemented files and planned files for later steps.
 
-```
+```text
 Mini-Blinkit-inventory-API/
-├── .github/workflows/ci.yml       # CI pipeline (planned, Step 5)
-├── api/index.js                   # Exports the Express app for Vercel (planned, Step 7)
+├── .github/
+│   └── workflows/
+│       └── ci.yml                 # CI pipeline (planned, Step 5)
+├── api/
+│   └── index.js                   # Vercel API entry point (planned, Step 7)
 ├── client/                        # React + Vite frontend (planned, Step 6)
 ├── server/
-│   ├── app.js                     # Express app (exported, used by tests and Vercel)
-│   ├── index.js                   # Starts the server locally
+│   ├── app.js                     # Express application
+│   ├── index.js                   # Starts the local server
 │   ├── db.js                      # PostgreSQL connection pool
 │   ├── routes/
-│   │   └── products.js            # Products endpoints
-│   ├── db/schema.sql              # Database schema
-│   ├── scripts/init-db.js         # Creates the tables (npm run db:init)
-│   ├── .env.example               # Environment variable template
+│   │   ├── products.js            # Product endpoints
+│   │   └── reservations.js        # Reservation endpoints
+│   ├── utils/
+│   │   └── expireReservations.js  # Expires old reservations
+│   ├── db/
+│   │   └── schema.sql             # Database schema
+│   ├── scripts/
+│   │   └── init-db.js             # Database initialization script
+│   ├── tests/
+│   │   └── reservations.test.js   # Reservation API tests
+│   │   └── products.test.js       # Products API tests
+│   ├── .env.example               # Environment template
 │   └── package.json
-├── Dockerfile                     # (planned, Step 4)
-├── .dockerignore                  # (planned, Step 4)
-├── vercel.json                    # (planned, Step 7)
+├── Dockerfile                     # Planned, Step 4
+├── .dockerignore                  # Planned, Step 4
+├── vercel.json                    # Planned, Step 7
 ├── .gitignore
 └── README.md
 ```
@@ -321,17 +491,95 @@ Mini-Blinkit-inventory-API/
 
 ## Environment variables
 
-Set in `server/.env` (never commit this file). `server/.env.example` is the template.
+The main application configuration is stored in `server/.env`. Use `server/.env.example` as the template.
 
 | Variable | Description | Default |
 |---|---|---|
-| `DATABASE_URL` | Neon connection string (direct). Used when the pooled one is empty. | none |
-| `DATABASE_URL_POOLED` | Neon pooled connection string (host contains `-pooler`). Preferred when set, and used on Vercel. | empty |
-| `TEST_DATABASE_URL` | Connection string of the separate Neon `test` branch. Used only by the tests and CI. | none |
-| `PORT` | Port the API listens on | `3000` |
+| `DATABASE_URL` | Direct Neon PostgreSQL connection string | None |
+| `DATABASE_URL_POOLED` | Pooled Neon connection string. Preferred when configured. | Empty |
+| `PORT` | Port on which the API runs | `3000` |
 | `RESERVATION_TTL_MINUTES` | Minutes before a reservation expires | `10` |
 
-On Vercel, set `DATABASE_URL_POOLED` under **Project Settings → Environment Variables**. In GitHub, add `TEST_DATABASE_URL` under **Settings → Secrets and variables → Actions**.
+### Test database configuration
+
+Tests must use a separate Neon branch named `test`, not the main application database.
+
+Create `server/.env.test` with:
+
+```env
+DATABASE_URL_POOLED=YOUR_TEST_DATABASE_CONNECTION_STRING
+RESERVATION_TTL_MINUTES=10
+```
+
+The test script loads this file automatically.
+
+**Security rules:**
+
+- Never commit `.env` or `.env.test`.
+- Never put database credentials in source code.
+- Never use the main application database for automated tests.
+- Store CI database credentials in GitHub Actions Secrets.
+
+On Vercel, configure `DATABASE_URL_POOLED` under **Project Settings → Environment Variables**.
+
+---
+
+## Running automated tests
+
+The backend uses:
+
+- Node.js built-in test runner (`node:test`).
+- Supertest for HTTP API testing.
+- A separate Neon test database branch.
+
+### 1. Configure the test database
+
+Create `server/.env.test` and add the pooled connection string from the separate Neon `test` branch.
+
+Do not use the main database connection string here.
+
+### 2. Run the tests
+
+From the `server/` directory:
+
+```bash
+npm test
+```
+
+The test command is:
+
+```json
+"test": "node --env-file=.env.test --test"
+```
+
+### 3. Current test coverage
+
+The reservation test suite currently covers:
+Product API tests (5):
+1. Creates a product with correct stock details.
+2. Rejects invalid product data.
+3. Rejects product names and categories that are too long.
+4. Lists products with correct available stock.
+5. Filters products by category.
+
+
+Reservation API tests (10):
+1. Rejecting a reservation with zero quantity.
+2. Returning 404 for a non-existent product.
+3. Preventing reservations when stock is insufficient.
+4. Creating a reservation and updating available stock.
+5. Confirming a reservation and preventing duplicate confirmation.
+6. Releasing a reservation and preventing duplicate release.
+7. Rejecting an invalid reservation ID.
+8. Returning 404 for a non-existent reservation.
+9. Expiring old reservations and restoring available stock.
+10. Preventing overselling during concurrent reservation requests.
+
+**Current result:** 15 tests passed, 0 failed.
+
+The tests create temporary records in the test database and clean them up after execution.
+
+**Important:** Never point `.env.test` to the shared application database. Automated tests must remain isolated from the team's main data.
 
 ---
 
@@ -340,12 +588,12 @@ On Vercel, set `DATABASE_URL_POOLED` under **Project Settings → Environment Va
 | Member | Name | Steps | Responsibility |
 |---|---|---|---|
 | Member 1 | Gursneh Kaur | 1-3 | Application and backend |
-| Member 2 | _name_ | 4-6 | Docker, CI/CD and frontend |
-| Member 3 | _name_ | 7-9 | Deployment, documentation and final checks |
+| Member 2 | Pakhi sharma | 4-6 | Docker, CI/CD and frontend |
+| Member 3 | Kanishk Jain | 7-9 | Deployment, documentation and final checks |
 
-**Hand-off rule:** each member finishes their block, makes sure `main` is up to date and working, ticks their boxes below, and tells the next member before they start.
+**Hand-off rule:** Each member finishes their assigned work, checks that `main` is up to date and working, updates the completion checklist, and informs the next member before they begin.
 
-**Database access:** Member 1 owns the Neon project and shares the connection strings privately.
+**Database access:** Member 1 manages the Neon project and shares the required connection strings privately.
 
 ---
 
@@ -358,32 +606,41 @@ Tick each box on GitHub as the work is completed.
 - [x] **Step 1: Repository and project setup**
   - [x] Create the GitHub repository and add both teammates as collaborators.
   - [x] Work directly on `main` (single-branch workflow).
-  - [x] Set up the Express app in `server/` and the `/api/health` endpoint.
-  - [x] Add `.gitignore`, `.env.example` and the initial README.
-- [ ] **Step 2: Products API**
-  - [x] Create the Neon database and run `server/db/schema.sql` (`npm run db:init`).
+  - [x] Set up the Express application in `server/`.
+  - [x] Implement the `/api/health` endpoint.
+  - [x] Add `.gitignore`, `.env.example`, and the initial README.
+
+- [x] **Step 2: Products API**
+  - [x] Create the Neon database and initialize the schema using `npm run db:init`.
   - [x] Implement `POST /api/products` to add a product.
   - [x] Implement `GET /api/products` to list products with `available_qty`.
-  - [x] Store product name, category, price, `stock_qty` and `reserved_qty`.
-  - [ ] Add tests for the product endpoints (done together with the Step 3 tests).
-- [ ] **Step 3: Reservation logic**
-  - [ ] Implement stock reservation, confirmation and release (atomic, as described above).
-  - [ ] Implement `expireReservations()` and call it before reads and reservation requests.
-  - [ ] Add tests for successful reservation, insufficient stock, confirmation, release and expiry.
-  - [ ] Add a concurrency test: two simultaneous requests for the last available unit, where exactly one succeeds and the other gets `409`.
+  - [x] Store product name, category, price, `stock_qty`, and `reserved_qty`.
+  - [x] Add automated tests for the product endpoints.
+
+- [x] **Step 3: Reservation logic**
+  - [x] Implement stock reservation, confirmation, and release.
+  - [x] Use atomic database updates to prevent overselling.
+  - [x] Implement `expireReservations()` and call it before product reads and reservation requests.
+  - [x] Add tests for successful reservation, insufficient stock, confirmation, release, and expiry.
+  - [x] Add a concurrency test to verify that only one of two competing reservations succeeds when stock is insufficient for both.
 
 ### Member 2: Docker, CI/CD and frontend (Steps 4-6)
 
 - [ ] **Step 4: Docker**
-  - [ ] Create a `Dockerfile` (Node 22) and `.dockerignore`.
-  - [ ] Build the Docker image and run the application in a container locally.
-  - [ ] Verify that the application works inside the container (`/api/health` and a product request).
+  - [ ] Create a `Dockerfile` using Node.js 22 and a `.dockerignore`.
+  - [ ] Build the Docker image.
+  - [ ] Run the application inside a Docker container locally.
+  - [ ] Verify `/api/health` and a product request inside the container.
+
 - [ ] **Step 5: GitHub Actions CI pipeline**
   - [ ] Add a workflow under `.github/workflows/`.
-  - [ ] Run the workflow on pushes and pull requests.
-  - [ ] Add the `TEST_DATABASE_URL` secret (Neon `test` branch) so the tests have a database.
-  - [ ] Install dependencies, run tests and build the Docker image.
-  - [ ] Verify that the workflow completes successfully (green check).
+  - [ ] Run the workflow on pushes to `main`.
+  - [ ] Add the test database connection as a GitHub Actions Secret.
+  - [ ] Install dependencies using `npm ci`.
+  - [ ] Run automated tests.
+  - [ ] Build the Docker image.
+  - [ ] Verify that the workflow completes successfully.
+
 - [ ] **Step 6: Simple frontend**
   - [ ] Build a React page to list products and add new products.
   - [ ] Add a quantity field and a Reserve button.
@@ -393,18 +650,22 @@ Tick each box on GitHub as the work is completed.
 ### Member 3: Deployment, documentation and final checks (Steps 7-9)
 
 - [ ] **Step 7: Vercel deployment**
-  - [ ] Configure the frontend and API for Vercel (`vercel.json` and `api/index.js`).
-  - [ ] Connect the GitHub repository to Vercel and add `DATABASE_URL_POOLED` as an environment variable.
+  - [ ] Configure the frontend and API for Vercel using `vercel.json` and `api/index.js`.
+  - [ ] Connect the GitHub repository to Vercel.
+  - [ ] Add `DATABASE_URL_POOLED` as a Vercel environment variable.
   - [ ] Deploy the application and test the live frontend and API.
-  - [ ] Verify that pushes to `main` trigger a deployment.
+  - [ ] Verify that pushes to `main` trigger deployments.
+
 - [ ] **Step 8: Complete the README**
-  - [ ] Check that the quick start still matches the final scripts.
-  - [ ] Add commands to run the tests and the Docker container.
-  - [ ] Add the GitHub repository and live Vercel URL.
-  - [ ] Document the reservation expiry behavior and database setup.
+  - [x] Add local setup and database instructions.
+  - [x] Document API endpoints and reservation expiry behavior.
+  - [x] Document automated testing and test database configuration.
+  - [ ] Add Docker execution instructions after Step 4 is complete.
+  - [ ] Add the GitHub repository and live Vercel URLs.
+
 - [ ] **Step 9: Final verification and release**
   - [ ] Test the live application from another browser or device.
-  - [ ] Verify product creation, reservation, confirmation, release and expiry.
+  - [ ] Verify product creation, reservation, confirmation, release, and expiry.
   - [ ] Check that all three members have contributed commits.
   - [ ] Confirm that `main` has passing CI checks.
   - [ ] Create the `v1.0` Git tag/release and tidy the repository.
@@ -413,68 +674,121 @@ Tick each box on GitHub as the work is completed.
 
 ## Git workflow
 
-We work directly on `main`.
+The team works directly on the `main` branch.
 
-1. Before you start, and before every push, run `git pull`.
-2. Make small, focused commits with a prefix: `feat:`, `fix:`, `test:`, `ci:`, `docs:` or `chore:`.
-3. Push with `git push`. If it is rejected, run `git pull --rebase` and push again.
-4. Only change files that belong to your step, to avoid merge conflicts.
-5. Never commit `.env` files or database credentials.
+1. Before starting work and before pushing, run:
 
----
+   ```bash
+   git pull
+   ```
 
-## Running tests
+2. Make small, focused commits using prefixes such as:
+   - `feat:` for new features
+   - `fix:` for bug fixes
+   - `test:` for tests
+   - `ci:` for CI/CD changes
+   - `docs:` for documentation
+   - `chore:` for maintenance
 
-Tests (Jest + Supertest) are added in the testing step, and the commands will be listed here.
+3. Push changes using:
 
-Neon is the only database we use. Tests run against a separate Neon branch named `test` (a free copy of the main database) through `TEST_DATABASE_URL`. The tests empty the tables they use, so **never** point `TEST_DATABASE_URL` at the main database.
+   ```bash
+   git push
+   ```
+
+4. If a push is rejected because the remote has new commits, run:
+
+   ```bash
+   git pull --rebase
+   git push
+   ```
+
+5. Only modify files related to your assigned work to reduce conflicts.
+
+6. Never commit `.env` files, `.env.test`, or database credentials.
 
 ---
 
 ## Docker
 
+Docker support will be added in Step 4.
+
+Once the `Dockerfile` is available, build the image from the repository root:
+
 ```bash
-# From the repository root
 docker build -t blinkit-inventory-api .
+```
+
+Run the container:
+
+```bash
 docker run --env-file server/.env -p 3000:3000 blinkit-inventory-api
 ```
 
-Then open `http://localhost:3000/api/health`. The exact commands are finalised in Step 4.
+Then open:
 
-> **Heads-up:** Docker's `--env-file` keeps quote characters as part of the value. If the values in your `.env` are wrapped in double quotes (the Neon dashboard and CLI add them), remove the quotes for Docker or the database connection will fail.
+[http://localhost:3000/api/health](http://localhost:3000/api/health)
+
+**Heads-up:** Docker's `--env-file` handles quoted values differently from Node.js dotenv. If your connection string values contain surrounding double quotes, remove those quotes before running the container.
 
 ---
 
 ## CI/CD
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request:
+GitHub Actions will run on pushes to `main` and pull requests when the workflow is configured.
 
-1. Check out the code and set up Node 22.
-2. Read the Neon `test` branch connection string from the `TEST_DATABASE_URL` GitHub secret.
-3. Install dependencies (`npm ci`) and run the tests.
-4. Build the Docker image.
+The planned CI pipeline will:
 
-Deployment to Vercel happens automatically when changes are pushed to `main`.
+1. Check out the repository.
+2. Set up Node.js 22.
+3. Read the test database connection from GitHub Actions Secrets.
+4. Install dependencies using `npm ci`.
+5. Run automated tests against the separate Neon test database.
+6. Build the Docker image.
+
+Vercel deployment will be configured to deploy the application when changes are pushed to `main`.
 
 ---
 
 ## Architecture
 
-The React frontend sends HTTP requests to the Node.js/Express API. The API validates requests and uses PostgreSQL to store products and reservations. PostgreSQL performs stock reservations atomically. GitHub Actions runs tests and builds the Docker image whenever code is pushed or a pull request is opened. Vercel hosts the live application using a Vercel-compatible frontend and API deployment.
+The React frontend sends HTTP requests to the Node.js/Express API. The API validates requests and uses PostgreSQL to store products and reservations.
 
-```
-React (Vite)  --HTTP-->  Express API  --SQL-->  PostgreSQL (Neon)
-                              |
-                  expireReservations() before
-                  reads and reservation requests
+PostgreSQL performs stock reservations atomically. The `expireReservations()` utility releases expired reservations before relevant API operations.
 
-GitHub push / PR  -->  GitHub Actions (tests + Docker build)
-GitHub main       -->  Vercel (live deployment)
+GitHub Actions will run tests and build the Docker image. Vercel will host the frontend and API using a Vercel-compatible deployment.
+
+```text
+React (Vite)
+     |
+     | HTTP
+     v
+Express API
+     |
+     | SQL
+     v
+PostgreSQL (Neon)
+
+expireReservations()
+runs before product reads
+and reservation requests
+
+GitHub push / PR
+     |
+     v
+GitHub Actions
+(tests + Docker build)
+
+GitHub main
+     |
+     v
+Vercel
+(live deployment)
 ```
 
 ---
 
 ## Links
 
-- **GitHub repository:** _to be added_
-- **Live application:** _to be added_
+- **GitHub repository:** https://github.com/gursneh-28/Mini-Blinkit-inventory-API.git
+- **Live application:** _To be added_

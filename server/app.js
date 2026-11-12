@@ -1,13 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const productsRouter = require("./routes/products");
+const reservationsRouter = require("./routes/reservations");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Health check API
+
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "OK",
@@ -16,6 +17,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/products", productsRouter);
+app.use("/api/reservations", reservationsRouter);
 
 // Unknown routes
 app.use((req, res) => {

@@ -1,5 +1,6 @@
 const express = require("express");
 const db = require("../db");
+const expireReservations = require("../utils/expireReservations");
 
 const router = express.Router();
 
@@ -60,18 +61,50 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-// GET /api/products - list products (optional ?category=Dairy)
-router.get("/", async (req, res, next) => {
-  try {
-    const { category } = req.query;
-    const result = category
-      ? await db.query("SELECT * FROM products WHERE category = $1 ORDER BY id", [category])
-      : await db.query("SELECT * FROM products ORDER BY id");
 
-    res.status(200).json(result.rows.map(toProduct));
+// GET /api/products
+router.get("/", async (req, res, next) => {
+  let client;
+  let transactionStarted = false;
+
+  try {
+    client = await db.pool.connect();
+
+    await client.query("BEGIN");
+    transactionStarted = true;
+
+    // Expire old reservations before fetching products
+    await expireReservations(client);
+
+    const { category } = req.query;
+
+    const result = category
+      ? await client.query(
+          "SELECT * FROM products WHERE category = $1 ORDER BY id",
+          [category]
+        )
+      : await client.query("SELECT * FROM products ORDER BY id");
+
+    await client.query("COMMIT");
+    transactionStarted = false;
+
+    return res.status(200).json(result.rows.map(toProduct));
   } catch (err) {
+    if (client && transactionStarted) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Rollback failed:", rollbackError.message);
+      }
+    }
+
     next(err);
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
+
 
 module.exports = router;
