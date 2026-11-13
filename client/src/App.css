@@ -1,0 +1,14 @@
+body { font-family: system-ui, sans-serif; background: #f7f7f2; margin: 0; }
+.app { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+h1 { color: #1a7f37; }
+.card { background: #fff; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+input { padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+.qty { width: 60px; }
+button { padding: 8px 14px; border: 0; border-radius: 6px; background: #f8cb46; cursor: pointer; font-weight: 600; }
+button.secondary { background: #ddd; }
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; }
+th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+.msg { padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
+.msg.success { background: #d6f5dd; color: #14532d; }
+.msg.error { background: #fde2e2; color: #7f1d1d; }
