@@ -2,12 +2,11 @@
 
 A small inventory-management application inspired by Blinkit. Users can add products, view available stock, reserve items, confirm reservations, and release reservations. Reservations expire automatically after 10 minutes.
 
-The goal of this project is to demonstrate **Docker, GitHub collaboration, CI/CD, and deployment**. The application itself is intentionally kept simple.
+The goal of this project is to demonstrate Docker, GitHub collaboration, CI/CD, and deployment. The application itself is intentionally kept simple.
 
-- **GitHub repository:** https://github.com/gursneh-28/Mini-Blinkit-inventory-API.git
-- **Live application (Vercel):** _To be added_
+GitHub repository: https://github.com/gursneh-28/Mini-Blinkit-inventory-API.git
 
----
+Live application (Vercel): To be added
 
 ## Quick start (about 5 minutes)
 
@@ -15,8 +14,8 @@ Follow these steps to run the backend on your computer.
 
 ### 1. Install the tools
 
-- [Node.js](https://nodejs.org), version **22 or newer** (`node --version`)
-- [Git](https://git-scm.com)
+- Node.js, version 22 or newer (`node --version`)
+- Git
 - Docker Desktop (needed from Step 4 onwards)
 
 ### 2. Clone the repository and install dependencies
@@ -37,7 +36,7 @@ cp .env.example .env
 
 On Windows Command Prompt, use:
 
-```cmd
+```bash
 copy .env.example .env
 ```
 
@@ -45,14 +44,14 @@ PowerShell also accepts `cp`.
 
 ### 4. Configure the database connection
 
-The team uses a shared **Neon PostgreSQL database** for the application.
+The team uses a shared Neon PostgreSQL database for the application.
 
-1. Ask Member 1 for the database connection strings privately.
-2. Open `server/.env`.
-3. Add the connection strings:
-   - `DATABASE_URL`: Direct Neon connection string.
-   - `DATABASE_URL_POOLED`: Pooled Neon connection string. Its hostname contains `-pooler`.
-4. If you have only one connection string, put it in `DATABASE_URL` and leave `DATABASE_URL_POOLED` empty.
+- Ask Member 1 for the database connection strings privately.
+- Open `server/.env`.
+- Add the connection strings:
+  - `DATABASE_URL`: Direct Neon connection string.
+  - `DATABASE_URL_POOLED`: Pooled Neon connection string. Its hostname contains `-pooler`.
+- If you have only one connection string, put it in `DATABASE_URL` and leave `DATABASE_URL_POOLED` empty.
 
 Keep the other environment variables, such as `PORT` and `RESERVATION_TTL_MINUTES`, unchanged.
 
@@ -72,7 +71,7 @@ This creates the required tables if they do not already exist.
 
 Expected output:
 
-```text
+```
 Database schema is ready. Tables:
 - products
 - reservations
@@ -86,7 +85,7 @@ npm run dev
 
 Open:
 
-[http://localhost:3000/api/health](http://localhost:3000/api/health)
+http://localhost:3000/api/health
 
 Expected response:
 
@@ -132,37 +131,49 @@ List products:
 curl http://localhost:3000/api/products
 ```
 
-### Troubleshooting
+### 8. Try the frontend (Step 6)
+
+In a second terminal (keep the API from Step 6 running):
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Open the link Vite prints (usually http://localhost:5173). See the [Frontend](#-frontend-react--vite) section below for details.
+
+## Troubleshooting
 
 | Problem | Fix |
 |---|---|
-| `getaddrinfo ENOTFOUND ...neon.tech` or DNS errors | Your network may not be resolving Neon. Try another network or your phone's hotspot. You can also try DNS servers `8.8.8.8` and `1.1.1.1`, then run `ipconfig /flushdns`. |
+| `getaddrinfo ENOTFOUND ...neon.tech` or DNS errors | Your network may not be resolving Neon. Try another network or your phone's hotspot. You can also try DNS servers 8.8.8.8 and 1.1.1.1, then run `ipconfig /flushdns`. |
 | `password authentication failed` | Check that the connection string is correct and up to date. |
 | `relation "products" does not exist` | Run `npm run db:init` from `server/`. |
-| Environment variable is `undefined` | Run commands from the `server/` directory and check that `server/.env` exists. |
+| Environment variable is undefined | Run commands from the `server/` directory and check that `server/.env` exists. |
 | `EADDRINUSE` | Port 3000 is already in use. Stop the other process or change `PORT` in `.env`. |
 | PostgreSQL SSL warning about `sslmode` | This may be an informational warning from the `pg` library. It does not necessarily mean the connection failed. |
-
----
+| `docker is not recognized` | Close and reopen VS Code (or the terminal) after installing Docker Desktop. |
+| `error during connect` / `Cannot connect to the Docker daemon` | Docker Desktop is not running yet. Open it and wait for the green "Engine running" status. |
+| `port is already allocated` | Another process (for example `npm run dev`) is using port 3000. Stop it with Ctrl + C. |
+| Container cannot connect to the database | Remove surrounding double quotes from the values in `server/.env` (see the Docker heads-up below). |
 
 ## Tech stack
 
 | Area | Technology |
 |---|---|
-| Frontend | React + Vite (planned) |
+| Frontend | React + Vite (done, Step 6) |
 | Backend | Node.js 22 + Express |
 | Database | PostgreSQL (Neon) |
 | Testing | Node.js built-in test runner + Supertest |
-| Containerization | Docker (planned) |
-| CI/CD | GitHub Actions (planned) |
+| Containerization | Docker (done, Step 4) |
+| CI/CD | GitHub Actions (done, Step 5) |
 | Deployment | Vercel (planned) |
 | Version control | Git + GitHub |
 
 **Deployment note:** Docker will be used to run and test the application locally and to build the image in CI. Vercel does not deploy a Docker image directly, so the frontend and API will use a Vercel-compatible setup: a static frontend build and the Express application running as a serverless function under `/api`.
 
 **Why PostgreSQL instead of in-memory data?** Vercel functions can run in separate, short-lived instances. In-memory data is not shared between requests. PostgreSQL ensures that every request works with the same inventory and reservation data.
-
----
 
 ## Main features
 
@@ -174,28 +185,27 @@ curl http://localhost:3000/api/products
 - Release a reservation to make reserved stock available again.
 - Automatically expire reservations after 10 minutes.
 - Prevent overselling through atomic database updates and transactions.
-
----
+- Web page to list products, add products, reserve stock, and confirm or release reservations, with success and error messages (for example "Only 3 units available").
 
 ## Reservation logic
 
 Available stock is calculated as:
 
-```text
+```
 available_qty = stock_qty - reserved_qty
 ```
 
 | Operation | What happens |
 |---|---|
-| **Add product** | Creates a product with `stock_qty` and `reserved_qty = 0`. |
-| **Reserve** | Increases `reserved_qty` only if enough stock is available. Creates a reservation with status `HELD` and an expiry time. |
-| **Confirm** | Decreases both `stock_qty` and `reserved_qty`. Reservation becomes `CONFIRMED`. |
-| **Release** | Decreases `reserved_qty` only. `stock_qty` remains unchanged. Reservation becomes `RELEASED`. |
-| **Expire** | A reservation that is still `HELD` after its expiry time is released automatically. Reservation becomes `EXPIRED`. |
+| Add product | Creates a product with `stock_qty` and `reserved_qty = 0`. |
+| Reserve | Increases `reserved_qty` only if enough stock is available. Creates a reservation with status `HELD` and an expiry time. |
+| Confirm | Decreases both `stock_qty` and `reserved_qty`. Reservation becomes `CONFIRMED`. |
+| Release | Decreases `reserved_qty` only. `stock_qty` remains unchanged. Reservation becomes `RELEASED`. |
+| Expire | A reservation that is still `HELD` after its expiry time is released automatically. Reservation becomes `EXPIRED`. |
 
 ### Atomic reservation
 
-The stock check and stock update happen in a **single SQL statement**. This prevents two concurrent requests from reserving the same available stock.
+The stock check and stock update happen in a single SQL statement. This prevents two concurrent requests from reserving the same available stock.
 
 ```sql
 UPDATE products
@@ -208,13 +218,13 @@ RETURNING id;
 
 If no row is updated, there is insufficient stock and the API returns:
 
-```text
+```
 409 INSUFFICIENT_STOCK
 ```
 
 The product update and reservation insertion run inside the same database transaction.
 
-### How reservation expiry works
+## How reservation expiry works
 
 Vercel functions are stateless, so background timers such as `setInterval()` are not used.
 
@@ -227,15 +237,13 @@ Instead, the `expireReservations()` function runs before:
 
 It finds reservations that are still `HELD` and whose `expires_at` time has passed. It then:
 
-1. Marks those reservations as `EXPIRED`.
-2. Decreases the corresponding products' `reserved_qty`.
-3. Performs the changes within a database transaction.
+- Marks those reservations as `EXPIRED`.
+- Decreases the corresponding products' `reserved_qty`.
+- Performs the changes within a database transaction.
 
 Only `HELD` reservations can expire. Confirmed reservations are never released by the expiry process.
 
 The expiry duration is configurable using `RESERVATION_TTL_MINUTES`, which defaults to 10 minutes.
-
----
 
 ## Database schema
 
@@ -293,8 +301,6 @@ The database constraints provide an additional safety layer:
 
 **Schema note:** `CREATE TABLE IF NOT EXISTS` does not modify an existing table. If the schema changes, coordinate with the team and use an appropriate migration or `ALTER TABLE` statement.
 
----
-
 ## API overview
 
 | Method | Endpoint | Purpose | Status |
@@ -308,13 +314,13 @@ The database constraints provide an additional safety layer:
 
 The products endpoint supports an optional category filter:
 
-```text
+```
 GET /api/products?category=Dairy
 ```
 
 ### Request and response examples
 
-**`GET /api/health`**
+**GET /api/health**
 
 ```json
 {
@@ -323,7 +329,7 @@ GET /api/products?category=Dairy
 }
 ```
 
-**`POST /api/products`**
+**POST /api/products**
 
 Request:
 
@@ -356,12 +362,12 @@ Validation error: `400 VALIDATION_ERROR`
 Product validation rules:
 
 - `name` and `category` are required text fields.
-- Maximum name length: 150 characters.
-- Maximum category length: 100 characters.
+- Maximum `name` length: 150 characters.
+- Maximum `category` length: 100 characters.
 - `price` must be a number from 0 to 99,999,999.99.
 - `stock_qty` must be a whole number from 0 to 1,000,000.
 
-**`GET /api/products`**
+**GET /api/products**
 
 Example response:
 
@@ -380,7 +386,7 @@ Example response:
 ]
 ```
 
-**`POST /api/reservations`**
+**POST /api/reservations**
 
 Request:
 
@@ -403,13 +409,13 @@ Possible errors:
 | 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
 | 409 | `INSUFFICIENT_STOCK` | Not enough available stock |
 
-**`POST /api/reservations/:id/confirm`**
+**POST /api/reservations/:id/confirm**
 
 Confirms a reservation and deducts the reserved quantity from stock.
 
 Successful response: `200 OK`, with reservation status `CONFIRMED`.
 
-**`POST /api/reservations/:id/release`**
+**POST /api/reservations/:id/release**
 
 Releases a reservation and makes the reserved quantity available again.
 
@@ -448,20 +454,61 @@ Other error codes:
 | `INVALID_RESERVATION_STATUS` | 409 | Reservation is no longer active |
 | `INTERNAL_ERROR` | 500 | Unexpected server error |
 
----
+## Frontend (React + Vite)
+
+The `client/` folder contains a single-page React app (Step 6) that talks to the Express API.
+
+**What it does:**
+
+- Lists products with their available quantity.
+- Adds new products (name, category, price, stock).
+- Has a quantity field and a **Reserve** button for each product.
+- Shows a green success message or a red error message (for example "Only 3 units available" when stock is insufficient).
+- Shows reservations made in the current session with **Confirm** and **Release** buttons.
+
+**Run it locally** (two terminals):
+
+```bash
+# Terminal 1: backend
+cd server
+npm run dev
+
+# Terminal 2: frontend
+cd client
+npm install
+npm run dev
+```
+
+Open the link Vite prints (usually http://localhost:5173).
+
+**How it connects to the API:** the frontend calls relative URLs such as `/api/products`. During development, `client/vite.config.js` proxies `/api` to `http://localhost:3000`. On Vercel the same relative paths reach the API, so no code change is needed for deployment.
+
+**Build for production:**
+
+```bash
+cd client
+npm run build
+```
 
 ## Project structure
 
 The structure below includes implemented files and planned files for later steps.
 
-```text
+```
 Mini-Blinkit-inventory-API/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                 # CI pipeline (planned, Step 5)
+│       └── ci.yml                 # CI pipeline (done, Step 5) 
 ├── api/
 │   └── index.js                   # Vercel API entry point (planned, Step 7)
-├── client/                        # React + Vite frontend (planned, Step 6)
+├── client/                        # React + Vite frontend (done, Step 6) 
+│   ├── src/                       
+│   │   ├── App.jsx                # Products, reserve, confirm/release UI 
+│   │   ├── App.css                # Styles 
+│   │   └── main.jsx               # React entry point 
+│   ├── index.html                 
+│   ├── vite.config.js             # Dev proxy: /api -> localhost:3000 
+│   └── package.json               
 ├── server/
 │   ├── app.js                     # Express application
 │   ├── index.js                   # Starts the local server
@@ -480,14 +527,12 @@ Mini-Blinkit-inventory-API/
 │   │   └── products.test.js       # Products API tests
 │   ├── .env.example               # Environment template
 │   └── package.json
-├── Dockerfile                     # Planned, Step 4
-├── .dockerignore                  # Planned, Step 4
-├── vercel.json                    # Planned, Step 7
+├── Dockerfile                     
+├── .dockerignore                   
+├── vercel.json                    
 ├── .gitignore
 └── README.md
 ```
-
----
 
 ## Environment variables
 
@@ -497,8 +542,8 @@ The main application configuration is stored in `server/.env`. Use `server/.env.
 |---|---|---|
 | `DATABASE_URL` | Direct Neon PostgreSQL connection string | None |
 | `DATABASE_URL_POOLED` | Pooled Neon connection string. Preferred when configured. | Empty |
-| `PORT` | Port on which the API runs | `3000` |
-| `RESERVATION_TTL_MINUTES` | Minutes before a reservation expires | `10` |
+| `PORT` | Port on which the API runs | 3000 |
+| `RESERVATION_TTL_MINUTES` | Minutes before a reservation expires | 10 |
 
 ### Test database configuration
 
@@ -506,23 +551,23 @@ Tests must use a separate Neon branch named `test`, not the main application dat
 
 Create `server/.env.test` with:
 
-```env
+```
 DATABASE_URL_POOLED=YOUR_TEST_DATABASE_CONNECTION_STRING
 RESERVATION_TTL_MINUTES=10
 ```
 
 The test script loads this file automatically.
 
-**Security rules:**
+Security rules:
 
 - Never commit `.env` or `.env.test`.
 - Never put database credentials in source code.
 - Never use the main application database for automated tests.
 - Store CI database credentials in GitHub Actions Secrets.
 
-On Vercel, configure `DATABASE_URL_POOLED` under **Project Settings → Environment Variables**.
+On Vercel, configure `DATABASE_URL_POOLED` under Project Settings → Environment Variables.
 
----
+**Note on CI:** the GitHub Actions workflow does not need a database secret. It starts a temporary PostgreSQL container for each run (see the CI/CD section).
 
 ## Running automated tests
 
@@ -534,7 +579,7 @@ The backend uses:
 
 ### 1. Configure the test database
 
-Create `server/.env.test` and add the pooled connection string from the separate Neon `test` branch.
+Create `server/.env.test` and add the pooled connection string from the separate Neon test branch.
 
 Do not use the main database connection string here.
 
@@ -554,34 +599,32 @@ The test command is:
 
 ### 3. Current test coverage
 
-The reservation test suite currently covers:
-Product API tests (5):
-1. Creates a product with correct stock details.
-2. Rejects invalid product data.
-3. Rejects product names and categories that are too long.
-4. Lists products with correct available stock.
-5. Filters products by category.
+The reservation test suite currently covers: Product API tests (5):
 
+- Creates a product with correct stock details.
+- Rejects invalid product data.
+- Rejects product names and categories that are too long.
+- Lists products with correct available stock.
+- Filters products by category.
 
 Reservation API tests (10):
-1. Rejecting a reservation with zero quantity.
-2. Returning 404 for a non-existent product.
-3. Preventing reservations when stock is insufficient.
-4. Creating a reservation and updating available stock.
-5. Confirming a reservation and preventing duplicate confirmation.
-6. Releasing a reservation and preventing duplicate release.
-7. Rejecting an invalid reservation ID.
-8. Returning 404 for a non-existent reservation.
-9. Expiring old reservations and restoring available stock.
-10. Preventing overselling during concurrent reservation requests.
 
-**Current result:** 15 tests passed, 0 failed.
+- Rejecting a reservation with zero quantity.
+- Returning 404 for a non-existent product.
+- Preventing reservations when stock is insufficient.
+- Creating a reservation and updating available stock.
+- Confirming a reservation and preventing duplicate confirmation.
+- Releasing a reservation and preventing duplicate release.
+- Rejecting an invalid reservation ID.
+- Returning 404 for a non-existent reservation.
+- Expiring old reservations and restoring available stock.
+- Preventing overselling during concurrent reservation requests.
+
+Current result: 15 tests passed, 0 failed.
 
 The tests create temporary records in the test database and clean them up after execution.
 
 **Important:** Never point `.env.test` to the shared application database. Automated tests must remain isolated from the team's main data.
-
----
 
 ## Team and ownership
 
@@ -594,8 +637,6 @@ The tests create temporary records in the test database and clean them up after 
 **Hand-off rule:** Each member finishes their assigned work, checks that `main` is up to date and working, updates the completion checklist, and informs the next member before they begin.
 
 **Database access:** Member 1 manages the Neon project and shares the required connection strings privately.
-
----
 
 ## Project completion checklist
 
@@ -626,94 +667,106 @@ Tick each box on GitHub as the work is completed.
 
 ### Member 2: Docker, CI/CD and frontend (Steps 4-6)
 
-- [ ] **Step 4: Docker**
-  - [ ] Create a `Dockerfile` using Node.js 22 and a `.dockerignore`.
-  - [ ] Build the Docker image.
-  - [ ] Run the application inside a Docker container locally.
-  - [ ] Verify `/api/health` and a product request inside the container.
+**Step 4: Docker** 
 
-- [ ] **Step 5: GitHub Actions CI pipeline**
-  - [ ] Add a workflow under `.github/workflows/`.
-  - [ ] Run the workflow on pushes to `main`.
-  - [ ] Add the test database connection as a GitHub Actions Secret.
-  - [ ] Install dependencies using `npm ci`.
-  - [ ] Run automated tests.
-  - [ ] Build the Docker image.
-  - [ ] Verify that the workflow completes successfully.
+- [x] Create a Dockerfile using Node.js 22 and a `.dockerignore`. 
+- [x] Build the Docker image. 
+- [x] Run the application inside a Docker container locally. 
+- [x] Verify `/api/health` and a product request inside the container. 
 
-- [ ] **Step 6: Simple frontend**
-  - [ ] Build a React page to list products and add new products.
-  - [ ] Add a quantity field and a Reserve button.
-  - [ ] Show reservation success and error messages, including out-of-stock errors.
-  - [ ] Add controls to confirm or release a reservation.
+**Step 5: GitHub Actions CI pipeline** 
+
+- [x] Add a workflow under `.github/workflows/`. 
+- [x] Run the workflow on pushes to `main`.(it runs on every push and pull request)
+- [x] Add the test database connection as a GitHub Actions Secret.(not needed: CI uses a temporary PostgreSQL service container instead)
+- [x] Install dependencies using `npm ci`. 
+- [x] Run automated tests. 
+- [x] Build the Docker image. 
+- [x] Verify that the workflow completes successfully. 
+
+**Step 6: Simple frontend** 
+
+- [x] Build a React page to list products and add new products. 
+- [x] Add a quantity field and a Reserve button. 
+- [x] Show reservation success and error messages, including out-of-stock errors. 
+- [x] Add controls to confirm or release a reservation. 
 
 ### Member 3: Deployment, documentation and final checks (Steps 7-9)
 
-- [ ] **Step 7: Vercel deployment**
-  - [ ] Configure the frontend and API for Vercel using `vercel.json` and `api/index.js`.
-  - [ ] Connect the GitHub repository to Vercel.
-  - [ ] Add `DATABASE_URL_POOLED` as a Vercel environment variable.
-  - [ ] Deploy the application and test the live frontend and API.
-  - [ ] Verify that pushes to `main` trigger deployments.
+**Step 7: Vercel deployment**
 
-- [ ] **Step 8: Complete the README**
-  - [x] Add local setup and database instructions.
-  - [x] Document API endpoints and reservation expiry behavior.
-  - [x] Document automated testing and test database configuration.
-  - [ ] Add Docker execution instructions after Step 4 is complete.
-  - [ ] Add the GitHub repository and live Vercel URLs.
+- [ ] Configure the frontend and API for Vercel using `vercel.json` and `api/index.js`.
+- [ ] Connect the GitHub repository to Vercel.
+- [ ] Add `DATABASE_URL_POOLED` as a Vercel environment variable.
+- [ ] Deploy the application and test the live frontend and API.
+- [ ] Verify that pushes to `main` trigger deployments.
 
-- [ ] **Step 9: Final verification and release**
-  - [ ] Test the live application from another browser or device.
-  - [ ] Verify product creation, reservation, confirmation, release, and expiry.
-  - [ ] Check that all three members have contributed commits.
-  - [ ] Confirm that `main` has passing CI checks.
-  - [ ] Create the `v1.0` Git tag/release and tidy the repository.
+**Step 8: Complete the README**
 
----
+- [ ] Add local setup and database instructions.
+- [ ] Document API endpoints and reservation expiry behavior.
+- [ ] Document automated testing and test database configuration.
+- [ ] Add Docker execution instructions after Step 4 is complete.
+- [ ] Add the GitHub repository and live Vercel URLs.
+
+**Step 9: Final verification and release**
+
+- [ ] Test the live application from another browser or device.
+- [ ] Verify product creation, reservation, confirmation, release, and expiry.
+- [ ] Check that all three members have contributed commits.
+- [ ] Confirm that `main` has passing CI checks.
+- [ ] Create the v1.0 Git tag/release and tidy the repository.
 
 ## Git workflow
 
 The team works directly on the `main` branch.
 
-1. Before starting work and before pushing, run:
+Steps 4–6 were done on separate feature branches (`feat/docker`, `ci/github-actions`, `feat/frontend`) and merged into `main` through pull requests.
 
-   ```bash
-   git pull
-   ```
+Before starting work and before pushing, run:
 
-2. Make small, focused commits using prefixes such as:
-   - `feat:` for new features
-   - `fix:` for bug fixes
-   - `test:` for tests
-   - `ci:` for CI/CD changes
-   - `docs:` for documentation
-   - `chore:` for maintenance
+```bash
+git pull
+```
 
-3. Push changes using:
+Make small, focused commits using prefixes such as:
 
-   ```bash
-   git push
-   ```
+- `feat:` for new features
+- `fix:` for bug fixes
+- `test:` for tests
+- `ci:` for CI/CD changes
+- `docs:` for documentation
+- `chore:` for maintenance
 
-4. If a push is rejected because the remote has new commits, run:
+Push changes using:
 
-   ```bash
-   git pull --rebase
-   git push
-   ```
+```bash
+git push
+```
 
-5. Only modify files related to your assigned work to reduce conflicts.
+If a push is rejected because the remote has new commits, run:
 
-6. Never commit `.env` files, `.env.test`, or database credentials.
+```bash
+git pull --rebase
+git push
+```
 
----
+For a feature branch, create it, push it, then open a pull request into `main` on GitHub:
+
+```bash
+git checkout -b feat/my-feature
+git push -u origin feat/my-feature
+```
+
+Only modify files related to your assigned work to reduce conflicts.
+
+Never commit `.env` files, `.env.test`, or database credentials.
 
 ## Docker
 
-Docker support will be added in Step 4.
+Docker support has been added (Step 4). The `Dockerfile` and `.dockerignore` are in the repository root.
 
-Once the `Dockerfile` is available, build the image from the repository root:
+Once the Dockerfile is available, build the image from the repository root:
 
 ```bash
 docker build -t blinkit-inventory-api .
@@ -727,11 +780,40 @@ docker run --env-file server/.env -p 3000:3000 blinkit-inventory-api
 
 Then open:
 
-[http://localhost:3000/api/health](http://localhost:3000/api/health)
+http://localhost:3000/api/health
 
 **Heads-up:** Docker's `--env-file` handles quoted values differently from Node.js dotenv. If your connection string values contain surrounding double quotes, remove those quotes before running the container.
 
----
+### Docker step by step
+
+1. Install and open **Docker Desktop**, and wait until it shows "Engine running".
+2. Make sure `server/.env` exists with the database connection strings (see Quick start, steps 3 and 4).
+3. From the repository root, build the image:
+
+   ```bash
+   docker build -t blinkit-inventory-api .
+   ```
+
+4. Run the container:
+
+   ```bash
+   docker run --env-file server/.env -p 3000:3000 blinkit-inventory-api
+   ```
+
+5. Open http://localhost:3000/api/health and http://localhost:3000/api/products to verify.
+6. Press Ctrl + C in the terminal to stop the container.
+
+### What the Dockerfile does
+
+| Line | Purpose |
+|---|---|
+| `FROM node:22-alpine` | Uses a small Node.js 22 image, matching the version required by this project. |
+| `COPY server/package*.json ./` and `RUN npm ci --omit=dev` | Installs the exact dependency versions from `package-lock.json` (production dependencies only), so the app behaves the same on every machine. |
+| `COPY server/ ./` | Copies the API source code into the image. |
+| `ENV NODE_ENV=production PORT=3000` and `EXPOSE 3000` | Sets production mode and the port the API listens on. |
+| `CMD ["node", "index.js"]` | Starts the Express server. |
+
+The `.dockerignore` file keeps `node_modules`, `.env` files, `.git`, `.github`, `client`, and `README.md` out of the image, so the image stays small and no credentials are copied into it.
 
 ## CI/CD
 
@@ -748,7 +830,23 @@ The planned CI pipeline will:
 
 Vercel deployment will be configured to deploy the application when changes are pushed to `main`.
 
----
+### CI pipeline (implemented, Step 5)
+
+The workflow is defined in `.github/workflows/ci.yml` and runs on **every push and every pull request**.
+
+| Step | What it does |
+|---|---|
+| Checkout | Downloads the repository code. |
+| Set up Node.js 22 | Installs Node.js 22 with npm caching. |
+| Install dependencies | Runs `npm ci` in `server/`. |
+| Create database tables | Runs `server/db/schema.sql` on a temporary PostgreSQL database. |
+| Create test env file | Writes `server/.env.test` pointing at the temporary database. |
+| Run tests | Runs `npm test` in `server/`. |
+| Build Docker image | Runs `docker build -t blinkit-inventory-api .` to confirm the image builds. |
+
+The workflow starts a temporary **PostgreSQL 16 service container** for each run, so tests never touch the shared Neon database and no database credentials need to be stored in GitHub Secrets. The container is deleted when the run ends.
+
+A green tick on the **Actions** tab (or on a pull request) means the dependencies installed, all tests passed, and the Docker image built successfully.
 
 ## Architecture
 
@@ -758,7 +856,9 @@ PostgreSQL performs stock reservations atomically. The `expireReservations()` ut
 
 GitHub Actions will run tests and build the Docker image. Vercel will host the frontend and API using a Vercel-compatible deployment.
 
-```text
+In the current setup, the React frontend (`client/`) calls the API through relative `/api` URLs (proxied to port 3000 in development), the API can run inside a Docker container built from the root `Dockerfile`, and every push triggers the GitHub Actions workflow that tests the API against a temporary PostgreSQL container and builds the Docker image.
+
+```
 React (Vite)
      |
      | HTTP
@@ -785,10 +885,3 @@ GitHub main
 Vercel
 (live deployment)
 ```
-
----
-
-## Links
-
-- **GitHub repository:** https://github.com/gursneh-28/Mini-Blinkit-inventory-API.git
-- **Live application:** _To be added_
