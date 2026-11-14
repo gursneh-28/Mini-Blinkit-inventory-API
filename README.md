@@ -705,9 +705,9 @@ Tick each box on GitHub as the work is completed.
 - [x] Prepare the Express backend entry point for Vercel.
 - [ ] Verify frontend API base URL support in the actual frontend code.
 - [x] Add frontend and backend environment example files.
-- [ ] Connect the GitHub repository to Vercel.
+- [x] Connect the GitHub repository to Vercel.
 - [ ] Configure production environment variables.
-- [ ] Deploy the frontend and backend.
+- [x] Deploy the frontend and backend.
 - [ ] Verify live API connectivity and application functionality.
 
 **Step 8: Complete the README**
