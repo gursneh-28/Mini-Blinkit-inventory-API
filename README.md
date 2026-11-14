@@ -10,7 +10,7 @@ GitHub repository: https://github.com/gursneh-28/Mini-Blinkit-inventory-API.git
 
 | Component | URL |
 |---|---|
-| Frontend Application | Replace with the actual frontend Vercel URL before publishing this README. |
+| Frontend Application | https://mini-blinkit-inventory-api.vercel.app/ |
 | Backend API | https://mini-blinkit-backend.vercel.app |
 | Backend Health Check | https://mini-blinkit-backend.vercel.app/api/health |
 | GitHub Repository | https://github.com/gursneh-28/Mini-Blinkit-inventory-API |
