@@ -495,43 +495,43 @@ npm run build
 The structure below includes implemented files and planned files for later steps.
 
 ```
+
 Mini-Blinkit-inventory-API/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                 # CI pipeline (done, Step 5) 
-├── api/
-│   └── index.js                   # Vercel API entry point (planned, Step 7)
-├── client/                        # React + Vite frontend (done, Step 6) 
-│   ├── src/                       
-│   │   ├── App.jsx                # Products, reserve, confirm/release UI 
-│   │   ├── App.css                # Styles 
-│   │   └── main.jsx               # React entry point 
-│   ├── index.html                 
-│   ├── vite.config.js             # Dev proxy: /api -> localhost:3000 
-│   └── package.json               
+│       └── ci.yml
+├── client/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   └── main.jsx
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   └── vite.config.js
 ├── server/
-│   ├── app.js                     # Express application
-│   ├── index.js                   # Starts the local server
-│   ├── db.js                      # PostgreSQL connection pool
-│   ├── routes/
-│   │   ├── products.js            # Product endpoints
-│   │   └── reservations.js        # Reservation endpoints
-│   ├── utils/
-│   │   └── expireReservations.js  # Expires old reservations
 │   ├── db/
-│   │   └── schema.sql             # Database schema
+│   │   └── schema.sql
+│   ├── routes/
+│   │   ├── products.js
+│   │   └── reservations.js
 │   ├── scripts/
-│   │   └── init-db.js             # Database initialization script
+│   │   └── init-db.js
 │   ├── tests/
-│   │   └── reservations.test.js   # Reservation API tests
-│   │   └── products.test.js       # Products API tests
-│   ├── .env.example               # Environment template
-│   └── package.json
-├── Dockerfile                     
-├── .dockerignore                   
-├── vercel.json                    
+│   │   ├── products.test.js
+│   │   └── reservations.test.js
+│   ├── utils/
+│   │   └── expireReservations.js
+│   ├── app.js
+│   ├── db.js
+│   ├── index.js
+│   ├── package.json
+│   └── package-lock.json
+├── .dockerignore
 ├── .gitignore
+├── Dockerfile
 └── README.md
+
 ```
 
 ## Environment variables
@@ -717,50 +717,29 @@ Tick each box on GitHub as the work is completed.
 - [ ] Confirm that `main` has passing CI checks.
 - [ ] Create the v1.0 Git tag/release and tidy the repository.
 
-## Git workflow
 
-The team works directly on the `main` branch.
+## Git Workflow
 
-Steps 4–6 were done on separate feature branches (`feat/docker`, `ci/github-actions`, `feat/frontend`) and merged into `main` through pull requests.
+The project follows a feature branch workflow.
 
-Before starting work and before pushing, run:
+1. `main` contains the integrated project.
+2. New work is developed in separate feature branches.
+3. Changes are pushed to GitHub.
+4. Pull requests are created against `main`.
+5. GitHub Actions runs the CI pipeline.
+6. Changes are merged after review and successful checks.
 
-```bash
-git pull
-```
-
-Make small, focused commits using prefixes such as:
-
-- `feat:` for new features
-- `fix:` for bug fixes
-- `test:` for tests
-- `ci:` for CI/CD changes
-- `docs:` for documentation
-- `chore:` for maintenance
-
-Push changes using:
+Example:
 
 ```bash
-git push
+git checkout main
+git pull origin main
+git checkout -b feat/your-feature
+git add .
+git commit -m "feat: describe your changes"
+git push -u origin feat/your-feature
 ```
 
-If a push is rejected because the remote has new commits, run:
-
-```bash
-git pull --rebase
-git push
-```
-
-For a feature branch, create it, push it, then open a pull request into `main` on GitHub:
-
-```bash
-git checkout -b feat/my-feature
-git push -u origin feat/my-feature
-```
-
-Only modify files related to your assigned work to reduce conflicts.
-
-Never commit `.env` files, `.env.test`, or database credentials.
 
 ## Docker
 
@@ -815,20 +794,28 @@ http://localhost:3000/api/health
 
 The `.dockerignore` file keeps `node_modules`, `.env` files, `.git`, `.github`, `client`, and `README.md` out of the image, so the image stays small and no credentials are copied into it.
 
-## CI/CD
 
-GitHub Actions will run on pushes to `main` and pull requests when the workflow is configured.
+## CI/CD Pipeline
 
-The planned CI pipeline will:
+The project uses GitHub Actions for continuous integration.
 
-1. Check out the repository.
-2. Set up Node.js 22.
-3. Read the test database connection from GitHub Actions Secrets.
-4. Install dependencies using `npm ci`.
-5. Run automated tests against the separate Neon test database.
-6. Build the Docker image.
+Workflow file: `.github/workflows/ci.yml`
 
-Vercel deployment will be configured to deploy the application when changes are pushed to `main`.
+The workflow runs automatically on every push and pull request.
+
+### Pipeline stages
+
+1. Starts a PostgreSQL 16 service for testing.
+2. Installs backend dependencies using `npm ci`.
+3. Creates the test database schema.
+4. Configures the test environment.
+5. Runs the backend test suite.
+6. Builds the Docker image.
+7. Installs frontend dependencies.
+8. Builds the React frontend using Vite.
+
+The pipeline verifies backend tests, Docker image creation and frontend production build before changes are merged.
+
 
 ### CI pipeline (implemented, Step 5)
 
@@ -885,3 +872,60 @@ GitHub main
 Vercel
 (live deployment)
 ```
+
+
+## Deployment
+
+The application is being prepared for deployment on Vercel using two separate projects connected to the same GitHub repository.
+
+The backend and frontend will be deployed independently, with PostgreSQL serving as the persistent database.
+
+
+### Architecture
+
+| Component | Vercel Root Directory | Technology |
+|---|---|---|
+| Backend | `server` | Node.js, Express |
+| Frontend | `client` | React, Vite |
+| Database | External PostgreSQL | PostgreSQL |
+
+### Backend Configuration
+
+Vercel automatically detects the Express application.
+
+Environment variables:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL_POOLED` | Production PostgreSQL pooled connection |
+| `RESERVATION_TTL_MINUTES` | `10` |
+
+### Frontend Configuration
+
+Build command: `npm run build`
+
+Output directory: `dist`
+
+Environment variable:
+
+| Variable | Purpose |
+|---|---|
+| `VITE_API_BASE_URL` | Deployed backend URL |
+
+### Deployment Checklist
+
+- [ ] Backend deployed
+- [ ] Frontend deployed
+- [ ] Database connection verified
+- [ ] Frontend API connectivity verified
+- [ ] Product operations tested
+- [ ] Reservation operations tested
+- [ ] Production deployment verified
+
+## Current Limitations
+
+1. Authentication and role based access control are not implemented.
+2. Reservation expiry is processed during relevant API operations rather than through a continuously running background scheduler.
+3. Reservation history is not currently displayed as a persistent frontend history view.
+4. Production deployment and live environment verification are pending.
+
