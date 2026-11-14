@@ -6,7 +6,14 @@ The goal of this project is to demonstrate Docker, GitHub collaboration, CI/CD, 
 
 GitHub repository: https://github.com/gursneh-28/Mini-Blinkit-inventory-API.git
 
-Live application (Vercel): To be added
+## Live Deployment
+
+| Component | URL |
+|---|---|
+| Frontend Application | https://YOUR-FRONTEND-URL.vercel.app |
+| Backend API | https://mini-blinkit-backend.vercel.app |
+| Backend Health Check | https://mini-blinkit-backend.vercel.app/api/health |
+| GitHub Repository | https://github.com/gursneh-28/Mini-Blinkit-inventory-API |
 
 ## Quick start (about 5 minutes)
 
@@ -303,10 +310,19 @@ The database constraints provide an additional safety layer:
 |---|---|---|---|
 | GET | `/api/health` | Check whether the API is running | Done |
 | GET | `/api/products` | List products and available stock | Done |
+| GET | `/api/products?category=Dairy` | 	Filter products by category | Done |
 | POST | `/api/products` | Add a product | Done |
 | POST | `/api/reservations` | Reserve product stock | Done |
 | POST | `/api/reservations/:id/confirm` | Confirm a reservation | Done |
 | POST | `/api/reservations/:id/release` | Release a reservation | Done |
+
+All endpoints are available through the deployed backend base URL:
+
+https://mini-blinkit-backend.vercel.app
+
+For example, the products endpoint is:
+
+https://mini-blinkit-backend.vercel.app/api/products
 
 The products endpoint supports an optional category filter:
 
