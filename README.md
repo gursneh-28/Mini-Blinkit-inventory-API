@@ -1,6 +1,6 @@
 # Mini Blinkit Inventory API
 
-A small inventory-management application inspired by Blinkit. Users can add products, view available stock, reserve items, confirm reservations, and release reservations. Reservations expire automatically after 10 minutes.
+A full-stack inventory management application inspired by quick-commerce platforms. Users can add products, view available stock, reserve items, confirm reservations, and release reservations. Reservations have a configurable expiry duration of 10 minutes by default.
 
 The goal of this project is to demonstrate Docker, GitHub collaboration, CI/CD, and deployment. The application itself is intentionally kept simple.
 
@@ -10,7 +10,7 @@ GitHub repository: https://github.com/gursneh-28/Mini-Blinkit-inventory-API.git
 
 | Component | URL |
 |---|---|
-| Frontend Application | https://YOUR-FRONTEND-URL.vercel.app |
+| Frontend Application | Replace with the actual frontend Vercel URL before publishing this README. |
 | Backend API | https://mini-blinkit-backend.vercel.app |
 | Backend Health Check | https://mini-blinkit-backend.vercel.app/api/health |
 | GitHub Repository | https://github.com/gursneh-28/Mini-Blinkit-inventory-API |
@@ -165,16 +165,17 @@ Open the link Vite prints (usually http://localhost:5173). See the [Frontend](#f
 
 | Area | Technology |
 |---|---|
-| Frontend | React + Vite (done, Step 6) |
-| Backend | Node.js 22 + Express |
+| Frontend | React 18 + Vite 6 |
+| Backend | Node.js 22 + Express 5 |
 | Database | PostgreSQL (Neon) |
+| Database driver | node-postgres (`pg`) |
 | Testing | Node.js built-in test runner + Supertest |
-| Containerization | Docker (done, Step 4) |
-| CI/CD | GitHub Actions (done, Step 5) |
-| Deployment | Vercel (planned) |
+| Containerization | Docker |
+| CI/CD | GitHub Actions |
+| Deployment | Vercel (separate frontend and backend projects) |
 | Version control | Git + GitHub |
 
-**Deployment note:** Docker is used to run and test the application locally and to build the image in CI. The planned Vercel deployment uses two separate projects: one for the Express backend and one for the React frontend. The Docker image is not the deployment artifact for these Vercel projects.
+**Deployment note:** Docker is used to run and test the backend locally and to build the image in CI. The Vercel deployment uses separate projects for the Express backend and React frontend. The Docker image is not the deployment artifact for these Vercel projects.
 
 **Why PostgreSQL instead of in-memory data?** Vercel functions can run in separate, short-lived instances. In-memory data is not shared between requests. PostgreSQL ensures that every request works with the same inventory and reservation data.
 
@@ -323,6 +324,8 @@ https://mini-blinkit-backend.vercel.app
 For example, the products endpoint is:
 
 https://mini-blinkit-backend.vercel.app/api/products
+
+The backend base URL is `https://mini-blinkit-backend.vercel.app`. The root path `/` is not defined as an API route; use `/api/health` to check API availability.
 
 The products endpoint supports an optional category filter:
 
@@ -499,7 +502,7 @@ Open the link Vite prints (usually http://localhost:5173).
 
 During local development, `client/vite.config.js` proxies `/api` requests to `http://localhost:3000`.
 
-For production deployment, the frontend must use the deployed backend URL. Configure `VITE_API_BASE_URL` in the Vercel frontend project only after verifying that the frontend code reads this variable when constructing API requests.
+For production, the frontend reads `VITE_API_BASE_URL` and uses it as the backend base URL. Set this variable in the frontend Vercel project to `https://mini-blinkit-backend.vercel.app`. Do not append `/api`; the frontend appends the API paths itself. Redeploy the frontend after changing the variable.
 
 **Build for production:**
 
@@ -689,7 +692,7 @@ Tick each box on GitHub as the work is completed.
 - [x] Run automated tests.
 - [x] Build the Docker image.
 - [x] Build the frontend.
-- [ ] Verify the latest GitHub Actions workflow run successfully.
+- [x] Verify the latest GitHub Actions workflow run successfully (the run for merge commit `051ece9` passed, as shown in the GitHub Actions screenshot).
 
 **Step 6: Simple frontend**
 
@@ -703,12 +706,12 @@ Tick each box on GitHub as the work is completed.
 **Step 7: Vercel deployment**
 
 - [x] Prepare the Express backend entry point for Vercel.
-- [ ] Verify frontend API base URL support in the actual frontend code.
+- [x] Verify frontend API base URL support in the frontend code (`VITE_API_BASE_URL`).
 - [x] Add frontend and backend environment example files.
-- [x] Connect the GitHub repository to Vercel.
-- [ ] Configure production environment variables.
-- [x] Deploy the frontend and backend.
-- [ ] Verify live API connectivity and application functionality.
+- [x] Deploy the backend to Vercel.
+- [x] Deploy the frontend to Vercel.
+- [ ] Verify production environment variables are present and correct.
+- [ ] Verify live API connectivity and complete application functionality.
 
 **Step 8: Complete the README**
 
@@ -719,16 +722,16 @@ Tick each box on GitHub as the work is completed.
 - [x] Document Docker execution.
 - [x] Document GitHub Actions CI/CD.
 - [x] Document project architecture and team responsibilities.
-- [ ] Verify the README against the final repository.
-- [ ] Add the live Vercel URLs after deployment.
+- [ ] Replace the frontend URL placeholder with the exact production URL.
+- [ ] Verify the README against the final repository and production behavior.
 
 **Step 9: Final verification and release**
 
 - [ ] Test the live application from another browser or device.
 - [ ] Verify product creation, reservation, confirmation, release, and expiry.
 - [ ] Check that all three members have contributed commits.
-- [ ] Confirm that `main` has passing CI checks.
-- [ ] Create the v1.0 Git tag/release and tidy the repository.
+- [x] Confirm that `main` has passing CI checks for the latest merged documentation commit shown in GitHub Actions.
+- [ ] Create the v1.0 Git tag/release after production verification.
 
 ## Git Workflow
 
@@ -828,90 +831,136 @@ The pipeline verifies backend tests, Docker image creation and frontend producti
 
 ## Architecture
 
-The React frontend sends HTTP requests to the Node.js/Express API. The API validates requests and uses PostgreSQL to store products and reservations.
+The application follows a client-server architecture. The React frontend communicates with the Express REST API over HTTPS. The backend validates requests, applies inventory and reservation business rules, and reads from or writes to PostgreSQL.
 
-PostgreSQL performs stock reservations atomically. The `expireReservations()` utility releases expired reservations before relevant API operations.
+PostgreSQL is the persistent source of truth for products and reservations. Stock reservation updates are performed atomically inside database transactions to prevent overselling. The `expireReservations()` utility processes expired `HELD` reservations during relevant API operations.
 
-GitHub Actions runs tests and builds the Docker image. Vercel is planned to host the frontend and backend as separate projects.
+GitHub Actions runs the backend test suite, builds the Docker image, and builds the frontend. Vercel hosts the frontend and backend as separate projects, while Neon hosts PostgreSQL.
 
-In the current setup, the React frontend (`client/`) calls the API through `/api` URLs during local development, proxied to port 3000. The API can run inside a Docker container built from the root `Dockerfile`. GitHub Actions tests the API against a temporary PostgreSQL container and builds the Docker image.
+### Application flow
+
+1. A user interacts with the React frontend.
+2. The frontend sends an HTTP request to the Express backend.
+3. Express validates the request and executes the relevant business logic.
+4. The backend uses PostgreSQL to persist product and reservation data.
+5. The backend returns a JSON response to the frontend.
+
+### Architecture diagram
 
 ```text
-React (Vite)
-     |
-     | HTTP
-     v
-Express API
-     |
-     | SQL
-     v
-PostgreSQL (Neon)
+User
+ |
+ v
+React + Vite Frontend (Vercel)
+ |
+ | HTTPS REST API
+ v
+Node.js + Express Backend (Vercel)
+ |
+ | SQL queries and transactions
+ v
+PostgreSQL Database (Neon)
 
-expireReservations()
-runs before relevant product
-and reservation operations
-
-GitHub push / PR
-     |
-     v
+GitHub Repository
+ |
+ | Push / Pull Request
+ v
 GitHub Actions
-(tests + Docker build + frontend build)
-
-Vercel
-(separate frontend and backend projects)
+ |
+ +--> Backend automated tests
+ +--> Docker image build
+ +--> Frontend production build
 ```
+
+### Component responsibilities
+
+| Component | Technology | Responsibility |
+|---|---|---|
+| Frontend | React 18, Vite 6 | Product listing, product creation, stock reservation and reservation actions |
+| Backend | Node.js 22, Express 5 | REST API, request validation and inventory business logic |
+| Database | PostgreSQL, Neon | Persistent product and reservation storage |
+| Database driver | `pg` | PostgreSQL connectivity and query execution |
+| Containerization | Docker | Consistent backend packaging and local execution |
+| CI/CD | GitHub Actions | Automated tests and build verification |
+| Frontend hosting | Vercel | Frontend production hosting |
+| Backend hosting | Vercel | Backend API hosting |
+| Version control | Git, GitHub | Source control, branches and pull requests |
 
 ## Deployment
 
-The application is being prepared for deployment on Vercel using two separate projects connected to the same GitHub repository.
+The application is deployed using separate Vercel projects for the frontend and backend. Neon PostgreSQL provides persistent database storage.
 
-The backend and frontend will be deployed independently, with PostgreSQL serving as the persistent database.
+### Deployment architecture
 
-### Architecture
+| Component | Hosting | Project root / configuration | Technology |
+|---|---|---|---|
+| Frontend | Vercel | `client/` | React, Vite |
+| Backend | Vercel | `server/` | Node.js, Express |
+| Database | Neon | Managed PostgreSQL instance | PostgreSQL |
 
-| Component | Vercel Root Directory | Technology |
-|---|---|---|
-| Backend | `server` | Node.js, Express |
-| Frontend | `client` | React, Vite |
-| Database | External PostgreSQL | PostgreSQL |
+### Backend deployment
 
-### Backend Configuration
+Production backend base URL:
 
-The backend Vercel project will use the `server` directory as its root directory.
+`https://mini-blinkit-backend.vercel.app`
 
-Environment variables:
-
-| Variable | Value |
-|---|---|
-| `DATABASE_URL_POOLED` | Production PostgreSQL pooled connection |
-| `DATABASE_URL` | Direct PostgreSQL connection, if required |
-| `RESERVATION_TTL_MINUTES` | `10` |
-
-### Frontend Configuration
-
-Build command: `npm run build`
-
-Output directory: `dist`
-
-Environment variable:
+The backend project is configured with the `server/` directory as its root. Configure these variables in the Vercel project's Production environment:
 
 | Variable | Purpose |
 |---|---|
-| `VITE_API_BASE_URL` | Deployed backend URL, provided the frontend code reads this variable |
+| `DATABASE_URL` | Direct PostgreSQL connection string |
+| `DATABASE_URL_POOLED` | Pooled PostgreSQL connection string; preferred by the application when present |
+| `RESERVATION_TTL_MINUTES` | Reservation expiry duration in minutes; use `10` for the default project configuration |
 
-### Deployment Checklist
+These values must be stored as Vercel environment variables. Never put database credentials in the frontend project or commit them to GitHub. A `PORT` variable is not required for the Vercel backend deployment.
 
-- [ ] Backend deployed
-- [ ] Frontend deployed
-- [ ] Database connection verified
-- [ ] Frontend API connectivity verified
-- [ ] Product operations tested
-- [ ] Reservation operations tested
-- [ ] Production deployment verified
+### Frontend deployment
 
-## Current Limitations
+The frontend project uses `client/` as its root directory.
+
+| Setting | Value |
+|---|---|
+| Framework preset | Vite |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| Install command | `npm install` |
+| Production branch | `main` |
+
+Configure this environment variable in the frontend Vercel project's Production environment:
+
+| Variable | Value |
+|---|---|
+| `VITE_API_BASE_URL` | `https://mini-blinkit-backend.vercel.app` |
+
+Do not append `/api` to this value. The frontend constructs API paths from the base URL. Redeploy the frontend after changing the environment variable.
+
+### Database
+
+The production database is hosted on Neon PostgreSQL. The backend uses the pooled connection string when available and falls back to the direct connection string. Database credentials must remain server-side.
+
+### Deployment verification
+
+Open the following endpoints to check the deployed backend:
+
+- Health check: <https://mini-blinkit-backend.vercel.app/api/health>
+- Products API: <https://mini-blinkit-backend.vercel.app/api/products>
+
+The backend root URL (`https://mini-blinkit-backend.vercel.app/`) is not an API route and may return a `NOT_FOUND` response. Use the `/api/health` and `/api/products` endpoints for verification.
+
+A successful health response confirms that the API process is reachable. A successful products response additionally confirms that the products route can access the database. Complete product and reservation operations through the frontend before marking production verification complete.
+
+### Deployment status checklist
+
+- [x] Backend deployed to Vercel.
+- [x] Frontend deployed and displaying product data in the shared screenshot.
+- [ ] Confirm the production backend health endpoint returns HTTP 200.
+- [ ] Confirm the production products endpoint returns HTTP 200.
+- [ ] Confirm the production database connection and persistence.
+- [ ] Complete live product and reservation workflow testing.
+
+## Current limitations
 
 1. Authentication and role-based access control are not implemented.
 2. Reservation expiry is processed during relevant API operations rather than through a continuously running background scheduler.
-3. Reservation history is not currently displayed as a persistent frontend history view.
-4. Production deployment and live environment verification are pending.
+3. Reservation history is held in the frontend's current session and is not currently presented as a persistent reservation history view.
+4. The production API endpoints and complete live reservation workflow still require final verification.
