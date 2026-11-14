@@ -2,15 +2,17 @@ import { useEffect, useState } from 'react'
 import './App.css'
 
 async function api(path, options = {}) {
-  const res = await fetch(`/api${path}`, {
+  const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+
+  const res = await fetch(`${apiBaseUrl}/api${path}`, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   })
+
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data?.error?.message || 'Something went wrong')
   return data
 }
-
 export default function App() {
   const [products, setProducts] = useState([])
   const [qty, setQty] = useState({})
