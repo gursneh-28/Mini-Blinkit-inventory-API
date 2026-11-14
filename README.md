@@ -44,20 +44,16 @@ PowerShell also accepts `cp`.
 
 ### 4. Configure the database connection
 
-The team uses a shared Neon PostgreSQL database for the application.
+The backend uses PostgreSQL for persistent product and reservation data.
 
-- Ask Member 1 for the database connection strings privately.
-- Open `server/.env`.
-- Add the connection strings:
-  - `DATABASE_URL`: Direct Neon connection string.
-  - `DATABASE_URL_POOLED`: Pooled Neon connection string. Its hostname contains `-pooler`.
-- If you have only one connection string, put it in `DATABASE_URL` and leave `DATABASE_URL_POOLED` empty.
+1. Obtain the development database connection details from the team member managing the database.
+2. Open `server/.env`.
+3. Configure `DATABASE_URL` with the direct PostgreSQL connection string.
+4. Configure `DATABASE_URL_POOLED` with the pooled connection string, if provided.
 
-Keep the other environment variables, such as `PORT` and `RESERVATION_TTL_MINUTES`, unchanged.
+The application prefers `DATABASE_URL_POOLED` and falls back to `DATABASE_URL`.
 
-**Important:** Everyone using the shared database can see the same product and reservation data. Do not drop, truncate, or delete shared database tables.
-
-Never share database credentials in GitHub issues, pull requests, commits, or this README.
+Keep database credentials private. Never commit `.env` or share connection strings publicly.
 
 ### 5. Initialize the database
 
@@ -71,7 +67,7 @@ This creates the required tables if they do not already exist.
 
 Expected output:
 
-```
+```text
 Database schema is ready. Tables:
 - products
 - reservations
@@ -133,7 +129,7 @@ curl http://localhost:3000/api/products
 
 ### 8. Try the frontend (Step 6)
 
-In a second terminal (keep the API from Step 6 running):
+In a second terminal, starting from the repository root (keep the API from Step 6 running):
 
 ```bash
 cd client
@@ -141,22 +137,22 @@ npm install
 npm run dev
 ```
 
-Open the link Vite prints (usually http://localhost:5173). See the [Frontend](#-frontend-react--vite) section below for details.
+Open the link Vite prints (usually http://localhost:5173). See the [Frontend](#frontend-react--vite) section below for details.
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---|---|
-| `getaddrinfo ENOTFOUND ...neon.tech` or DNS errors | Your network may not be resolving Neon. Try another network or your phone's hotspot. You can also try DNS servers 8.8.8.8 and 1.1.1.1, then run `ipconfig /flushdns`. |
+| `getaddrinfo ENOTFOUND ...neon.tech` or DNS errors | Your network may not be resolving Neon. Try another network or your phone's hotspot. You can also try DNS servers 8.8.8.8 and 1.1.1.1, then run `ipconfig /flushdns` on Windows. |
 | `password authentication failed` | Check that the connection string is correct and up to date. |
 | `relation "products" does not exist` | Run `npm run db:init` from `server/`. |
 | Environment variable is undefined | Run commands from the `server/` directory and check that `server/.env` exists. |
 | `EADDRINUSE` | Port 3000 is already in use. Stop the other process or change `PORT` in `.env`. |
 | PostgreSQL SSL warning about `sslmode` | This may be an informational warning from the `pg` library. It does not necessarily mean the connection failed. |
 | `docker is not recognized` | Close and reopen VS Code (or the terminal) after installing Docker Desktop. |
-| `error during connect` / `Cannot connect to the Docker daemon` | Docker Desktop is not running yet. Open it and wait for the green "Engine running" status. |
-| `port is already allocated` | Another process (for example `npm run dev`) is using port 3000. Stop it with Ctrl + C. |
-| Container cannot connect to the database | Remove surrounding double quotes from the values in `server/.env` (see the Docker heads-up below). |
+| `error during connect` / `Cannot connect to the Docker daemon` | Docker Desktop is not running yet. Open it and wait for the "Engine running" status. |
+| `port is already allocated` | Another process is using port 3000. Stop it with Ctrl + C or use a different port. |
+| Container cannot connect to the database | Check the connection string, database network access, and environment file formatting. See the Docker heads-up below. |
 
 ## Tech stack
 
@@ -171,7 +167,7 @@ Open the link Vite prints (usually http://localhost:5173). See the [Frontend](#-
 | Deployment | Vercel (planned) |
 | Version control | Git + GitHub |
 
-**Deployment note:** Docker will be used to run and test the application locally and to build the image in CI. Vercel does not deploy a Docker image directly, so the frontend and API will use a Vercel-compatible setup: a static frontend build and the Express application running as a serverless function under `/api`.
+**Deployment note:** Docker is used to run and test the application locally and to build the image in CI. The planned Vercel deployment uses two separate projects: one for the Express backend and one for the React frontend. The Docker image is not the deployment artifact for these Vercel projects.
 
 **Why PostgreSQL instead of in-memory data?** Vercel functions can run in separate, short-lived instances. In-memory data is not shared between requests. PostgreSQL ensures that every request works with the same inventory and reservation data.
 
@@ -191,7 +187,7 @@ Open the link Vite prints (usually http://localhost:5173). See the [Frontend](#-
 
 Available stock is calculated as:
 
-```
+```text
 available_qty = stock_qty - reserved_qty
 ```
 
@@ -218,7 +214,7 @@ RETURNING id;
 
 If no row is updated, there is insufficient stock and the API returns:
 
-```
+```text
 409 INSUFFICIENT_STOCK
 ```
 
@@ -314,7 +310,7 @@ The database constraints provide an additional safety layer:
 
 The products endpoint supports an optional category filter:
 
-```
+```text
 GET /api/products?category=Dairy
 ```
 
@@ -472,7 +468,9 @@ The `client/` folder contains a single-page React app (Step 6) that talks to the
 # Terminal 1: backend
 cd server
 npm run dev
+```
 
+```bash
 # Terminal 2: frontend
 cd client
 npm install
@@ -481,7 +479,11 @@ npm run dev
 
 Open the link Vite prints (usually http://localhost:5173).
 
-**How it connects to the API:** the frontend calls relative URLs such as `/api/products`. During development, `client/vite.config.js` proxies `/api` to `http://localhost:3000`. On Vercel the same relative paths reach the API, so no code change is needed for deployment.
+**How it connects to the API:**
+
+During local development, `client/vite.config.js` proxies `/api` requests to `http://localhost:3000`.
+
+For production deployment, the frontend must use the deployed backend URL. Configure `VITE_API_BASE_URL` in the Vercel frontend project only after verifying that the frontend code reads this variable when constructing API requests.
 
 **Build for production:**
 
@@ -490,12 +492,11 @@ cd client
 npm run build
 ```
 
-## Project structure
+## Project Structure
 
-The structure below includes implemented files and planned files for later steps.
+The repository is organized into separate frontend and backend applications, with Docker and GitHub Actions configuration at the root.
 
-```
-
+```text
 Mini-Blinkit-inventory-API/
 ├── .github/
 │   └── workflows/
@@ -505,6 +506,7 @@ Mini-Blinkit-inventory-API/
 │   │   ├── App.jsx
 │   │   ├── App.css
 │   │   └── main.jsx
+│   ├── .env.example
 │   ├── index.html
 │   ├── package.json
 │   ├── package-lock.json
@@ -522,17 +524,20 @@ Mini-Blinkit-inventory-API/
 │   │   └── reservations.test.js
 │   ├── utils/
 │   │   └── expireReservations.js
+│   ├── .env.example
 │   ├── app.js
 │   ├── db.js
 │   ├── index.js
+│   ├── test_db.js
 │   ├── package.json
 │   └── package-lock.json
 ├── .dockerignore
 ├── .gitignore
 ├── Dockerfile
 └── README.md
-
 ```
+
+**Security note:** Actual `.env` and `.env.test` files are excluded from version control. Only example templates are included.
 
 ## Environment variables
 
@@ -547,91 +552,76 @@ The main application configuration is stored in `server/.env`. Use `server/.env.
 
 ### Test database configuration
 
-Tests must use a separate Neon branch named `test`, not the main application database.
+Automated tests must use a database isolated from the shared application database.
 
-Create `server/.env.test` with:
+Create `server/.env.test`:
 
-```
+```env
 DATABASE_URL_POOLED=YOUR_TEST_DATABASE_CONNECTION_STRING
 RESERVATION_TTL_MINUTES=10
 ```
 
-The test script loads this file automatically.
+The test command automatically loads this file.
 
-Security rules:
+The GitHub Actions workflow uses a temporary PostgreSQL 16 service container for testing. It creates the schema and test environment automatically. CI does not use the shared application database or require its credentials.
 
-- Never commit `.env` or `.env.test`.
-- Never put database credentials in source code.
-- Never use the main application database for automated tests.
-- Store CI database credentials in GitHub Actions Secrets.
+## Running Automated Tests
 
-On Vercel, configure `DATABASE_URL_POOLED` under Project Settings → Environment Variables.
+The backend uses Node.js's built-in test runner and Supertest.
 
-**Note on CI:** the GitHub Actions workflow does not need a database secret. It starts a temporary PostgreSQL container for each run (see the CI/CD section).
+### Local execution
 
-## Running automated tests
-
-The backend uses:
-
-- Node.js built-in test runner (`node:test`).
-- Supertest for HTTP API testing.
-- A separate Neon test database branch.
-
-### 1. Configure the test database
-
-Create `server/.env.test` and add the pooled connection string from the separate Neon test branch.
-
-Do not use the main database connection string here.
-
-### 2. Run the tests
-
-From the `server/` directory:
+1. Configure `server/.env.test` with an isolated test database connection.
+2. Ensure the test database has the schema from `server/db/schema.sql`.
+3. Run the following commands:
 
 ```bash
+cd server
+npm ci
 npm test
 ```
 
-The test command is:
+The test script is:
 
 ```json
 "test": "node --env-file=.env.test --test"
 ```
 
-### 3. Current test coverage
+### Test coverage
 
-The reservation test suite currently covers: Product API tests (5):
+The suite currently contains 15 tests:
 
-- Creates a product with correct stock details.
-- Rejects invalid product data.
-- Rejects product names and categories that are too long.
-- Lists products with correct available stock.
-- Filters products by category.
+**Products API: 5 tests**
 
-Reservation API tests (10):
+- Product creation and stock details.
+- Invalid product data.
+- Product name and category length validation.
+- Product listing and available stock.
+- Category filtering.
 
-- Rejecting a reservation with zero quantity.
-- Returning 404 for a non-existent product.
-- Preventing reservations when stock is insufficient.
-- Creating a reservation and updating available stock.
-- Confirming a reservation and preventing duplicate confirmation.
-- Releasing a reservation and preventing duplicate release.
-- Rejecting an invalid reservation ID.
-- Returning 404 for a non-existent reservation.
-- Expiring old reservations and restoring available stock.
-- Preventing overselling during concurrent reservation requests.
+**Reservations API: 10 tests**
 
-Current result: 15 tests passed, 0 failed.
+- Invalid reservation quantity.
+- Non-existent product.
+- Insufficient stock.
+- Successful reservation.
+- Reservation confirmation and duplicate confirmation.
+- Reservation release and duplicate release.
+- Invalid reservation ID.
+- Non-existent reservation.
+- Expiry and stock restoration.
+- Concurrent reservation protection.
 
-The tests create temporary records in the test database and clean them up after execution.
+Latest local result: 15 passed, 0 failed.
 
-**Important:** Never point `.env.test` to the shared application database. Automated tests must remain isolated from the team's main data.
+CI uses its own temporary PostgreSQL database. Local tests must also use an isolated test database.
 
 ## Team and ownership
 
 | Member | Name | Steps | Responsibility |
 |---|---|---|---|
 | Member 1 | Gursneh Kaur | 1-3 | Application and backend |
-| Member 2 | Pakhi sharma | 4-6 | Docker, CI/CD and frontend |
+| Member 2 | Pakhi Sharma | 4-6 | Docker, CI/CD and frontend |
 | Member 3 | Kanishk Jain | 7-9 | Deployment, documentation and final checks |
 
 **Hand-off rule:** Each member finishes their assigned work, checks that `main` is up to date and working, updates the completion checklist, and informs the next member before they begin.
@@ -646,7 +636,7 @@ Tick each box on GitHub as the work is completed.
 
 - [x] **Step 1: Repository and project setup**
   - [x] Create the GitHub repository and add both teammates as collaborators.
-  - [x] Work directly on `main` (single-branch workflow).
+  - [x] Establish the feature branch and pull request workflow.
   - [x] Set up the Express application in `server/`.
   - [x] Implement the `/api/health` endpoint.
   - [x] Add `.gitignore`, `.env.example`, and the initial README.
@@ -661,53 +651,60 @@ Tick each box on GitHub as the work is completed.
 - [x] **Step 3: Reservation logic**
   - [x] Implement stock reservation, confirmation, and release.
   - [x] Use atomic database updates to prevent overselling.
-  - [x] Implement `expireReservations()` and call it before product reads and reservation requests.
+  - [x] Implement `expireReservations()` and call it before relevant product and reservation operations.
   - [x] Add tests for successful reservation, insufficient stock, confirmation, release, and expiry.
   - [x] Add a concurrency test to verify that only one of two competing reservations succeeds when stock is insufficient for both.
 
 ### Member 2: Docker, CI/CD and frontend (Steps 4-6)
 
-**Step 4: Docker** 
+**Step 4: Docker**
 
-- [x] Create a Dockerfile using Node.js 22 and a `.dockerignore`. 
-- [x] Build the Docker image. 
-- [x] Run the application inside a Docker container locally. 
-- [x] Verify `/api/health` and a product request inside the container. 
+- [x] Create a Dockerfile using Node.js 22 and a `.dockerignore`.
+- [x] Build the Docker image.
+- [x] Run the application inside a Docker container locally.
+- [x] Verify `/api/health` and a product request inside the container.
 
-**Step 5: GitHub Actions CI pipeline** 
+**Step 5: GitHub Actions CI pipeline**
 
-- [x] Add a workflow under `.github/workflows/`. 
-- [x] Run the workflow on pushes to `main`.(it runs on every push and pull request)
-- [x] Add the test database connection as a GitHub Actions Secret.(not needed: CI uses a temporary PostgreSQL service container instead)
-- [x] Install dependencies using `npm ci`. 
-- [x] Run automated tests. 
-- [x] Build the Docker image. 
-- [x] Verify that the workflow completes successfully. 
+- [x] Add a workflow under `.github/workflows/`.
+- [x] Configure the workflow to run on pushes and pull requests.
+- [x] Configure a temporary PostgreSQL service for testing.
+- [x] Install dependencies using `npm ci`.
+- [x] Run automated tests.
+- [x] Build the Docker image.
+- [x] Build the frontend.
+- [ ] Verify the latest GitHub Actions workflow run successfully.
 
-**Step 6: Simple frontend** 
+**Step 6: Simple frontend**
 
-- [x] Build a React page to list products and add new products. 
-- [x] Add a quantity field and a Reserve button. 
-- [x] Show reservation success and error messages, including out-of-stock errors. 
-- [x] Add controls to confirm or release a reservation. 
+- [x] Build a React page to list products and add new products.
+- [x] Add a quantity field and a Reserve button.
+- [x] Show reservation success and error messages, including out-of-stock errors.
+- [x] Add controls to confirm or release a reservation.
 
 ### Member 3: Deployment, documentation and final checks (Steps 7-9)
 
 **Step 7: Vercel deployment**
 
-- [ ] Configure the frontend and API for Vercel using `vercel.json` and `api/index.js`.
+- [x] Prepare the Express backend entry point for Vercel.
+- [ ] Verify frontend API base URL support in the actual frontend code.
+- [x] Add frontend and backend environment example files.
 - [ ] Connect the GitHub repository to Vercel.
-- [ ] Add `DATABASE_URL_POOLED` as a Vercel environment variable.
-- [ ] Deploy the application and test the live frontend and API.
-- [ ] Verify that pushes to `main` trigger deployments.
+- [ ] Configure production environment variables.
+- [ ] Deploy the frontend and backend.
+- [ ] Verify live API connectivity and application functionality.
 
 **Step 8: Complete the README**
 
-- [ ] Add local setup and database instructions.
-- [ ] Document API endpoints and reservation expiry behavior.
-- [ ] Document automated testing and test database configuration.
-- [ ] Add Docker execution instructions after Step 4 is complete.
-- [ ] Add the GitHub repository and live Vercel URLs.
+- [x] Document local setup and database initialization.
+- [x] Document environment variables and test database configuration.
+- [x] Document API endpoints and reservation expiry.
+- [x] Document automated tests and test coverage.
+- [x] Document Docker execution.
+- [x] Document GitHub Actions CI/CD.
+- [x] Document project architecture and team responsibilities.
+- [ ] Verify the README against the final repository.
+- [ ] Add the live Vercel URLs after deployment.
 
 **Step 9: Final verification and release**
 
@@ -716,7 +713,6 @@ Tick each box on GitHub as the work is completed.
 - [ ] Check that all three members have contributed commits.
 - [ ] Confirm that `main` has passing CI checks.
 - [ ] Create the v1.0 Git tag/release and tidy the repository.
-
 
 ## Git Workflow
 
@@ -740,12 +736,11 @@ git commit -m "feat: describe your changes"
 git push -u origin feat/your-feature
 ```
 
-
 ## Docker
 
 Docker support has been added (Step 4). The `Dockerfile` and `.dockerignore` are in the repository root.
 
-Once the Dockerfile is available, build the image from the repository root:
+Build the image from the repository root:
 
 ```bash
 docker build -t blinkit-inventory-api .
@@ -794,7 +789,6 @@ http://localhost:3000/api/health
 
 The `.dockerignore` file keeps `node_modules`, `.env` files, `.git`, `.github`, `client`, and `README.md` out of the image, so the image stays small and no credentials are copied into it.
 
-
 ## CI/CD Pipeline
 
 The project uses GitHub Actions for continuous integration.
@@ -816,36 +810,17 @@ The workflow runs automatically on every push and pull request.
 
 The pipeline verifies backend tests, Docker image creation and frontend production build before changes are merged.
 
-
-### CI pipeline (implemented, Step 5)
-
-The workflow is defined in `.github/workflows/ci.yml` and runs on **every push and every pull request**.
-
-| Step | What it does |
-|---|---|
-| Checkout | Downloads the repository code. |
-| Set up Node.js 22 | Installs Node.js 22 with npm caching. |
-| Install dependencies | Runs `npm ci` in `server/`. |
-| Create database tables | Runs `server/db/schema.sql` on a temporary PostgreSQL database. |
-| Create test env file | Writes `server/.env.test` pointing at the temporary database. |
-| Run tests | Runs `npm test` in `server/`. |
-| Build Docker image | Runs `docker build -t blinkit-inventory-api .` to confirm the image builds. |
-
-The workflow starts a temporary **PostgreSQL 16 service container** for each run, so tests never touch the shared Neon database and no database credentials need to be stored in GitHub Secrets. The container is deleted when the run ends.
-
-A green tick on the **Actions** tab (or on a pull request) means the dependencies installed, all tests passed, and the Docker image built successfully.
-
 ## Architecture
 
 The React frontend sends HTTP requests to the Node.js/Express API. The API validates requests and uses PostgreSQL to store products and reservations.
 
 PostgreSQL performs stock reservations atomically. The `expireReservations()` utility releases expired reservations before relevant API operations.
 
-GitHub Actions will run tests and build the Docker image. Vercel will host the frontend and API using a Vercel-compatible deployment.
+GitHub Actions runs tests and builds the Docker image. Vercel is planned to host the frontend and backend as separate projects.
 
-In the current setup, the React frontend (`client/`) calls the API through relative `/api` URLs (proxied to port 3000 in development), the API can run inside a Docker container built from the root `Dockerfile`, and every push triggers the GitHub Actions workflow that tests the API against a temporary PostgreSQL container and builds the Docker image.
+In the current setup, the React frontend (`client/`) calls the API through `/api` URLs during local development, proxied to port 3000. The API can run inside a Docker container built from the root `Dockerfile`. GitHub Actions tests the API against a temporary PostgreSQL container and builds the Docker image.
 
-```
+```text
 React (Vite)
      |
      | HTTP
@@ -857,29 +832,24 @@ Express API
 PostgreSQL (Neon)
 
 expireReservations()
-runs before product reads
-and reservation requests
+runs before relevant product
+and reservation operations
 
 GitHub push / PR
      |
      v
 GitHub Actions
-(tests + Docker build)
+(tests + Docker build + frontend build)
 
-GitHub main
-     |
-     v
 Vercel
-(live deployment)
+(separate frontend and backend projects)
 ```
-
 
 ## Deployment
 
 The application is being prepared for deployment on Vercel using two separate projects connected to the same GitHub repository.
 
 The backend and frontend will be deployed independently, with PostgreSQL serving as the persistent database.
-
 
 ### Architecture
 
@@ -891,13 +861,14 @@ The backend and frontend will be deployed independently, with PostgreSQL serving
 
 ### Backend Configuration
 
-Vercel automatically detects the Express application.
+The backend Vercel project will use the `server` directory as its root directory.
 
 Environment variables:
 
 | Variable | Value |
 |---|---|
 | `DATABASE_URL_POOLED` | Production PostgreSQL pooled connection |
+| `DATABASE_URL` | Direct PostgreSQL connection, if required |
 | `RESERVATION_TTL_MINUTES` | `10` |
 
 ### Frontend Configuration
@@ -910,7 +881,7 @@ Environment variable:
 
 | Variable | Purpose |
 |---|---|
-| `VITE_API_BASE_URL` | Deployed backend URL |
+| `VITE_API_BASE_URL` | Deployed backend URL, provided the frontend code reads this variable |
 
 ### Deployment Checklist
 
@@ -924,8 +895,7 @@ Environment variable:
 
 ## Current Limitations
 
-1. Authentication and role based access control are not implemented.
+1. Authentication and role-based access control are not implemented.
 2. Reservation expiry is processed during relevant API operations rather than through a continuously running background scheduler.
 3. Reservation history is not currently displayed as a persistent frontend history view.
 4. Production deployment and live environment verification are pending.
-

@@ -137,8 +137,14 @@ export default function App() {
                   <td>{r.quantity}</td>
                   <td>{r.status}</td>
                   <td className="row">
-                    <button onClick={() => act(r, 'confirm')}>Confirm</button>
-                    <button className="secondary" onClick={() => act(r, 'release')}>Release</button>
+                    {r.status === 'HELD' ? (
+                      <>
+                        <button onClick={() => act(r, 'confirm')}>Confirm</button>
+                        <button className="secondary" onClick={() => act(r, 'release')}>Release</button>
+                      </>
+                    ) : (
+                      <span>Completed</span>
+                    )}
                   </td>
                 </tr>
               ))}
